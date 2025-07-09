@@ -1,0 +1,47 @@
+{
+  "vhosts": [
+    {"name": "/"}
+  ],
+  "exchanges": [
+    {
+      "name": "user.created",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "user.dlx",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "user.created.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "user.dlx"
+      }
+    },
+    {
+      "name": "user.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {"source": "user.created", "vhost": "/", "destination": "user.created.queue", "destination_type": "queue", "routing_key": "", "arguments": {}},
+    {"source": "user.dlx", "vhost": "/", "destination": "user.dlq", "destination_type": "queue", "routing_key": "", "arguments": {}}
+  ]
+}

@@ -17,7 +17,7 @@ This repository contains the solution for the TOTVS **Especialista em Desenvolvi
 ```bash
 git clone <repo-url>
 cd fullstack-challenge
-cp .env.example .env   # adjust credentials if needed
+cp env.example .env   # adjust credentials if needed
 docker-compose up -d --build
 ```
 
