@@ -1,11 +1,11 @@
 node_modules/
 vendor/
 .env
-.env.*
-*.log
-coverage/
-.idea/
 .DS_Store
+.idea/
+.vscode/
 dist/
-build/
+coverage/
+# Docker artifacts
+**/Dockerfile-
 
