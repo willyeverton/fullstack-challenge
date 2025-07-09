@@ -7,9 +7,9 @@ This repository contains the solution for the TOTVS **Especialista em Desenvolvi
 | Component | Technology |
 |-----------|------------|
 | Front-end | React |
-| User Service (Serviço A) | PHP (framework TBD) + PostgreSQL |
+| User Service (Serviço A) | PHP (Lumen) + PostgreSQL |
 | Enrichment Service (Serviço B) | Node.js (framework TBD) + MongoDB |
-| Messaging | RabbitMQ |
+| Messaging | RabbitMQ with DLX/DLQ |
 | Containerisation | Docker & Docker Compose |
 
 ## Quick Start
@@ -32,9 +32,36 @@ Then access:
 
 ```
 services/
-  user-service-php/        # Serviço A
-  enrichment-service-node/ # Serviço B
+  user-service-php/        # User Service (Lumen)
+    ├── app/              
+    │   ├── Domain/       # Domain entities and business rules
+    │   ├── Application/  # Use cases and contracts
+    │   │   ├── Contracts/
+    │   │   └── Services/
+    │   ├── Infrastructure/ # Technical implementations
+    │   │   ├── Persistence/
+    │   │   └── Messaging/
+    │   └── Http/        # User interface layer
+    │       └── Controllers/
+    ├── database/        # Migrations and seeders
+    └── tests/          # Unit and integration tests
+  enrichment-service-node/ # Enrichment Service
 frontend/                  # React app
 ```
+
+## Architecture
+
+The services follow SOLID principles and clean architecture patterns:
+
+- **Domain Layer**: Core business logic and entities
+- **Application Layer**: Use cases and interface contracts
+- **Infrastructure Layer**: Technical implementations (database, messaging)
+- **Presentation Layer**: Controllers and API endpoints
+
+### Message Flow
+
+1. User Service publishes events to RabbitMQ fanout exchange
+2. Messages use DLX (Dead Letter Exchange) for error handling
+3. Failed messages are routed to DLQ (Dead Letter Queue) for retry
 
 Further documentation and API specs will be added as development progresses.
