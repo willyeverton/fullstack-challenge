@@ -1,19 +1,19 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
 
-use Slim\Factory\AppFactory;
-use App\Routes;
-use App\Database;
+require __DIR__.'/../vendor/autoload.php';
 
-$app = AppFactory::create();
+/*
+|--------------------------------------------------------------------------
+| Create The Application
+|--------------------------------------------------------------------------
+*/
 
-// Add middleware for JSON parsing, error handling etc.
-$app->addBodyParsingMiddleware();
-$app->addRoutingMiddleware();
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$app = require __DIR__.'/../bootstrap/app.php';
 
-Database::connect();
-
-Routes::register($app);
+/*
+|--------------------------------------------------------------------------
+| Run The Application
+|--------------------------------------------------------------------------
+*/
 
 $app->run();
