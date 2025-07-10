@@ -57,4 +57,14 @@ class EloquentUserRepository implements UserRepositoryInterface
             $model->uuid
         );
     }
+
+    private function toEntity(EloquentUser $model): User
+    {
+        return new User(
+            $model->name,
+            $model->email,
+            $model->id,
+            $model->uuid
+        );
+    }
 } 

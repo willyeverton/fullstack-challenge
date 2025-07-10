@@ -29,31 +29,31 @@ class GetUserServiceTest extends TestCase
 
     public function testGetUserReturnsUserWhenFound()
     {
-        $id = 1;
-        $user = new User('1', 'John Doe', 'john@example.com', 'test-uuid');
+        $uuid = 'test-uuid-123';
+        $user = new User('John Doe', 'john@example.com', '1', $uuid);
         
         $this->userRepository
-            ->shouldReceive('findById')
+            ->shouldReceive('findByUuid')
             ->once()
-            ->with($id)
+            ->with($uuid)
             ->andReturn($user);
         
-        $result = $this->service->execute($id);
+        $result = $this->service->execute($uuid);
         
         $this->assertEquals($user, $result);
     }
 
     public function testGetUserReturnsNullWhenNotFound()
     {
-        $id = 999;
+        $uuid = 'non-existent-uuid';
         
         $this->userRepository
-            ->shouldReceive('findById')
+            ->shouldReceive('findByUuid')
             ->once()
-            ->with($id)
+            ->with($uuid)
             ->andReturn(null);
         
-        $result = $this->service->execute($id);
+        $result = $this->service->execute($uuid);
         
         $this->assertNull($result);
     }

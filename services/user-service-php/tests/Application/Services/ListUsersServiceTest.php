@@ -30,8 +30,8 @@ class ListUsersServiceTest extends TestCase
     public function testListUsersReturnsAllUsers()
     {
         $users = [
-            new User('1', 'John Doe', 'john@example.com', 'uuid-1'),
-            new User('2', 'Jane Doe', 'jane@example.com', 'uuid-2')
+            new User('John Doe', 'john@example.com', '1', 'uuid-1'),
+            new User('Jane Doe', 'jane@example.com', '2', 'uuid-2')
         ];
         
         $this->userRepository

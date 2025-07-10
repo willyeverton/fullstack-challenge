@@ -12,7 +12,7 @@ class User implements JsonSerializable
     private string $name;
     private string $email;
 
-    public function __construct(?string $id = null, string $name, string $email, ?string $uuid = null)
+    public function __construct(string $name, string $email, ?string $id = null, ?string $uuid = null)
     {
         $this->id = $id;
         $this->name = $name;

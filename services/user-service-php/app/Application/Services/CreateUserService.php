@@ -5,16 +5,24 @@ namespace App\Application\Services;
 use App\Application\Contracts\UserRepositoryInterface;
 use App\Application\Contracts\EventPublisherInterface;
 use App\Domain\User;
-use Illuminate\Contracts\Validation\Factory as ValidationFactory;
 use InvalidArgumentException;
+use Illuminate\Contracts\Validation\Factory as ValidationFactory;
 
 class CreateUserService
 {
+    private $userRepository;
+    private $eventPublisher;
+    private $validator;
+
     public function __construct(
-        private UserRepositoryInterface $userRepository,
-        private EventPublisherInterface $eventPublisher,
-        private ValidationFactory $validator
-    ) {}
+        UserRepositoryInterface $userRepository,
+        EventPublisherInterface $eventPublisher,
+        ValidationFactory $validator
+    ) {
+        $this->userRepository = $userRepository;
+        $this->eventPublisher = $eventPublisher;
+        $this->validator = $validator;
+    }
 
     public function execute(string $name, string $email): User
     {
@@ -32,7 +40,7 @@ class CreateUserService
             );
         }
 
-        $user = new User(null, $name, $email);
+        $user = new User($name, $email);
         $createdUser = $this->userRepository->save($user);
         $this->eventPublisher->publishUserCreated($createdUser->getUuid(), $createdUser->getName());
 

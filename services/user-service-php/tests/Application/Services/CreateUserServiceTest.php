@@ -59,7 +59,7 @@ class CreateUserServiceTest extends MockeryTestCase
             ->once()
             ->andReturn(false);
         
-        $savedUser = new User('1', $name, $email, 'test-uuid');
+        $savedUser = new User($name, $email, '1', 'test-uuid');
         
         $this->userRepository
             ->shouldReceive('save')
