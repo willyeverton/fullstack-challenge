@@ -10,3 +10,7 @@ coverage/
 # Docker artifacts
 **/Dockerfile-
 
+# PHP testing artifacts
+**/.phpunit.result.cache
+**/.php-cs-fixer.cache
+
