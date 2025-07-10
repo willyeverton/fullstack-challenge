@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { appConfig } from './config/configuration';
 import { validate } from './config/environment.config';
+import { PersistenceModule } from './infrastructure/persistence/persistence.module';
 
 @Module({
   imports: [
@@ -12,12 +13,13 @@ import { validate } from './config/environment.config';
       validate,
     }),
     MongooseModule.forRootAsync({
-      useFactory: async (configService) => ({
-        uri: configService.get('app.mongodb.uri'),
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('app.mongodb.uri'),
       }),
-      inject: ['app.mongodb'],
+      inject: [ConfigService],
     }),
-    // Outros módulos serão importados aqui
+    PersistenceModule,
   ],
 })
 export class AppModule {}
