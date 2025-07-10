@@ -1,15 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { appConfig } from './config/configuration';
-import { validate } from './config/environment.config';
 import { PersistenceModule } from './infrastructure/persistence/persistence.module';
+import { MessagingModule } from './infrastructure/messaging/messaging.module';
+import { ApplicationModule } from './application/application.module';
+import { PresentationModule } from './presentation/presentation.module';
+import configuration from './config/configuration';
+import { validate } from './config/configuration';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
+      load: [configuration],
       isGlobal: true,
-      load: [appConfig],
       validate,
     }),
     MongooseModule.forRootAsync({
@@ -20,6 +23,9 @@ import { PersistenceModule } from './infrastructure/persistence/persistence.modu
       inject: [ConfigService],
     }),
     PersistenceModule,
+    MessagingModule,
+    ApplicationModule,
+    PresentationModule,
   ],
 })
 export class AppModule {}

@@ -1,89 +1,131 @@
 # Enrichment Service
 
-Microserviço responsável pelo enriquecimento de dados de usuários, implementado em Node.js com NestJS.
+Serviço responsável por enriquecer dados de usuários através de processamento assíncrono via mensageria.
+
+## Tecnologias
+
+- Node.js 20
+- NestJS 10
+- MongoDB
+- RabbitMQ
+- TypeScript
+- Jest
 
 ## Arquitetura
 
 O serviço segue os princípios da Clean Architecture e SOLID:
 
-- **Domain Layer**: Entidades e regras de negócio
-- **Application Layer**: Casos de uso e interfaces
-- **Infrastructure Layer**: Implementações concretas
-- **Presentation Layer**: Controllers e DTOs
-
-### Padrões de Projeto Utilizados
-
-- Repository Pattern
-- Factory Pattern
-- Provider Pattern
-- Dependency Injection
-- Event-Driven Architecture
+```
+src/
+├── domain/           # Regras de negócio e interfaces
+├── application/      # Casos de uso e serviços
+├── infrastructure/   # Implementações de adaptadores
+└── presentation/     # Controllers e DTOs
+```
 
 ## Funcionalidades
 
-- Consumo de eventos de criação de usuário via RabbitMQ
+- Consumo de mensagens de usuário criado via RabbitMQ
 - Enriquecimento de dados do usuário
 - Estratégia de retry com Dead Letter Queue (DLQ)
-- API REST para consulta de status
-- Persistência em MongoDB
+- Endpoint REST para consulta de dados enriquecidos
 
 ## Configuração
 
 ### Variáveis de Ambiente
 
 ```env
+# Ambiente
+NODE_ENV=development
+PORT=3000
+
+# MongoDB
 MONGODB_URI=mongodb://localhost:27017/enrichment
+
+# RabbitMQ
 RABBITMQ_URI=amqp://localhost:5672
 RABBITMQ_QUEUE=user.created
 RABBITMQ_DLX=user.created.dlx
 RABBITMQ_DLQ=user.created.dlq
-RETRY_ATTEMPTS=3
-RETRY_DELAY=1000
-PORT=3000
+RABBITMQ_RETRY_DELAY=1000
+RABBITMQ_RETRY_ATTEMPTS=3
 ```
 
-### Instalação
+## Instalação
 
 ```bash
+# Instalar dependências
 npm install
-```
 
-### Desenvolvimento
-
-```bash
+# Desenvolvimento
 npm run start:dev
-```
 
-### Produção
-
-```bash
+# Produção
 npm run build
 npm run start:prod
 ```
 
-### Testes
+## Testes
 
 ```bash
-npm run test        # unit tests
-npm run test:e2e    # end-to-end tests
-npm run test:cov    # test coverage
+# Testes unitários
+npm test
+
+# Cobertura
+npm run test:cov
+
+# E2E
+npm run test:e2e
 ```
 
-## API Endpoints
+## API
 
-- `GET /api/users/enriched/{uuid}` - Busca usuário enriquecido por UUID
-- `GET /api/users/enriched` - Lista todos os usuários enriquecidos
+### GET /users/enriched/:uuid
 
-## Integração com RabbitMQ
+Retorna os dados enriquecidos de um usuário.
 
-O serviço utiliza uma estratégia de retry com Dead Letter Exchange (DLX) para mensagens que falham no processamento:
+**Resposta de Sucesso (200)**
+```json
+{
+  "uuid": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "enrichmentData": {
+    "emailDomain": "example.com",
+    "nameLength": 8,
+    "timestamp": "2024-03-19T12:00:00.000Z"
+  },
+  "createdAt": "2024-03-19T12:00:00.000Z",
+  "updatedAt": "2024-03-19T12:00:00.000Z"
+}
+```
 
-1. Mensagem recebida na fila principal (`user.created`)
-2. Em caso de falha, mensagem é reprocessada até `RETRY_ATTEMPTS`
-3. Se todas as tentativas falharem, mensagem vai para DLQ (`user.created.dlq`)
+**Resposta de Erro (404)**
+```json
+{
+  "statusCode": 404,
+  "message": "User with UUID 123e4567-e89b-12d3-a456-426614174000 not found or not yet enriched",
+  "error": "Not Found"
+}
+```
 
-## Monitoramento e Observabilidade
+## Estratégia de Retry e DLQ
 
-- Logs estruturados
-- Métricas de processamento
-- Rastreamento de erros
+O serviço implementa uma estratégia robusta de retry para mensagens que falham no processamento:
+
+1. A mensagem é recebida na fila principal `user.created`
+2. Em caso de falha, a mensagem é enviada para uma fila de retry com delay exponencial
+3. Após o número máximo de tentativas, a mensagem é enviada para a DLQ com informações do erro
+4. As mensagens na DLQ podem ser reprocessadas manualmente se necessário
+
+## Docker
+
+O serviço inclui um Dockerfile com multi-stage build para otimização do tamanho da imagem e segurança.
+
+```bash
+# Build da imagem
+docker build -t enrichment-service .
+
+# Executar container
+docker run -p 3000:3000 enrichment-service
+```

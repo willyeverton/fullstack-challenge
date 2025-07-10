@@ -14,51 +14,19 @@ export type EnrichedUserDocument = EnrichedUser & Document;
   },
 })
 export class EnrichedUser {
-  @Prop({ required: true, unique: true })
   uuid: string;
-
-  @Prop({ required: true })
   name: string;
-
-  @Prop({ required: true })
   email: string;
+  enrichmentData: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
 
-  @Prop({ type: Object })
-  enrichmentData: {
-    age?: number;
-    gender?: string;
-    nationality?: string;
-    // Outros dados de enriquecimento podem ser adicionados aqui
-  };
-
-  @Prop({ default: 'pending' })
-  status: 'pending' | 'completed' | 'failed';
-
-  @Prop()
-  error?: string;
-
-  @Prop({ default: 0 })
-  retryCount: number;
-
-  constructor(partial: Partial<EnrichedUser>) {
-    Object.assign(this, partial);
-  }
-
-  public incrementRetryCount(): void {
-    this.retryCount += 1;
-  }
-
-  public markAsCompleted(): void {
-    this.status = 'completed';
-  }
-
-  public markAsFailed(error: string): void {
-    this.status = 'failed';
-    this.error = error;
-  }
-
-  public isMaxRetriesExceeded(maxRetries: number): boolean {
-    return this.retryCount >= maxRetries;
+  constructor(data: Partial<EnrichedUser>) {
+    Object.assign(this, {
+      ...data,
+      createdAt: data.createdAt || new Date(),
+      updatedAt: new Date(),
+    });
   }
 }
 
