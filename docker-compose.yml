@@ -37,6 +37,38 @@ services:
     networks:
       - app-network
 
+  # Enrichment Service (Node.js/NestJS)
+  enrichment-service:
+    build:
+      context: ./services/enrichment-service-node
+      target: development
+    volumes:
+      - ./services/enrichment-service-node:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/enrichment
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+      - RABBITMQ_QUEUE=user.created
+      - RABBITMQ_DLX=user.created.dlx
+      - RABBITMQ_DLQ=user.created.dlq
+      - RABBITMQ_RETRY_DELAY=1000
+      - RABBITMQ_RETRY_ATTEMPTS=3
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+      - rabbitmq
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # PostgreSQL
   postgres:
     image: postgres:13-alpine
@@ -50,6 +82,26 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB
+  mongodb:
+    image: mongo:5-focal
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # RabbitMQ
   rabbitmq:
@@ -64,9 +116,15 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
+  mongodb_data:
   rabbitmq_data:
 
 networks:
