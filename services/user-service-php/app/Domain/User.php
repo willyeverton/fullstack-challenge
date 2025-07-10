@@ -7,7 +7,7 @@ use JsonSerializable;
 
 class User implements JsonSerializable
 {
-    private string $id;
+    private ?string $id;
     private string $uuid;
     private string $name;
     private string $email;

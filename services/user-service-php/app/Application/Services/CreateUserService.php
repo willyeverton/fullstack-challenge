@@ -5,19 +5,20 @@ namespace App\Application\Services;
 use App\Application\Contracts\UserRepositoryInterface;
 use App\Application\Contracts\EventPublisherInterface;
 use App\Domain\User;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Contracts\Validation\Factory as ValidationFactory;
 use InvalidArgumentException;
 
 class CreateUserService
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
-        private EventPublisherInterface $eventPublisher
+        private EventPublisherInterface $eventPublisher,
+        private ValidationFactory $validator
     ) {}
 
     public function execute(string $name, string $email): User
     {
-        $validator = Validator::make(
+        $validator = $this->validator->make(
             ['name' => $name, 'email' => $email],
             [
                 'name' => 'required|min:3',
