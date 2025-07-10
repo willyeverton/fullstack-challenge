@@ -2,50 +2,58 @@
 
 namespace App\Http\Controllers;
 
-use Laravel\Lumen\Routing\Controller as BaseController;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use App\Application\Services\CreateUserService;
-use App\Application\Services\ListUsersService;
 use App\Application\Services\GetUserService;
+use App\Application\Services\ListUsersService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use InvalidArgumentException;
+use Laravel\Lumen\Routing\Controller as BaseController;
 
 class UserController extends BaseController
 {
-    public function __construct(
-        private CreateUserService $createUserService,
-        private ListUsersService $listUsersService,
-        private GetUserService $getUserService
-    ) {}
+    private $createUserService;
+    private $getUserService;
+    private $listUsersService;
 
-    public function create(Request $request): JsonResponse
+    public function __construct(
+        CreateUserService $createUserService,
+        GetUserService $getUserService,
+        ListUsersService $listUsersService
+    ) {
+        $this->createUserService = $createUserService;
+        $this->getUserService = $getUserService;
+        $this->listUsersService = $listUsersService;
+    }
+
+    public function store(Request $request): JsonResponse
     {
         try {
             $user = $this->createUserService->execute(
                 $request->input('name'),
                 $request->input('email')
             );
+
             return new JsonResponse($user, 201);
         } catch (InvalidArgumentException $e) {
-            return new JsonResponse(
-                json_decode($e->getMessage(), true),
-                400
-            );
+            return new JsonResponse(['error' => $e->getMessage()], 400);
         }
     }
 
-    public function list(): JsonResponse
+    public function index(): JsonResponse
     {
         $users = $this->listUsersService->execute();
         return new JsonResponse($users);
     }
 
-    public function get(int $id): JsonResponse
+    public function show(string $uuid): JsonResponse
     {
-        $user = $this->getUserService->execute($id);
+        $user = $this->getUserService->execute($uuid);
+
         if (!$user) {
-            return new JsonResponse(['message' => 'User not found'], 404);
+            return new JsonResponse(['error' => 'User not found'], 404);
         }
+
         return new JsonResponse($user);
     }
 } 

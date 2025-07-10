@@ -6,9 +6,12 @@ use App\Application\Contracts\UserRepositoryInterface;
 
 class ListUsersService
 {
-    public function __construct(
-        private UserRepositoryInterface $userRepository
-    ) {}
+    private $userRepository;
+
+    public function __construct(UserRepositoryInterface $userRepository)
+    {
+        $this->userRepository = $userRepository;
+    }
 
     public function execute(): array
     {

@@ -7,12 +7,15 @@ use App\Domain\User;
 
 class GetUserService
 {
-    public function __construct(
-        private UserRepositoryInterface $userRepository
-    ) {}
+    private $userRepository;
 
-    public function execute(int $id): ?User
+    public function __construct(UserRepositoryInterface $userRepository)
     {
-        return $this->userRepository->findById($id);
+        $this->userRepository = $userRepository;
+    }
+
+    public function execute(string $uuid): ?User
+    {
+        return $this->userRepository->findByUuid($uuid);
     }
 } 
