@@ -11,8 +11,9 @@ use Illuminate\Contracts\Validation\Factory as ValidationFactory;
 use Illuminate\Validation\Validator;
 use InvalidArgumentException;
 use Mockery;
+use Mockery\Adapter\Phpunit\MockeryTestCase;
 
-class CreateUserServiceTest extends TestCase
+class CreateUserServiceTest extends MockeryTestCase
 {
     private $userRepository;
     private $eventPublisher;
@@ -36,13 +37,7 @@ class CreateUserServiceTest extends TestCase
         );
     }
 
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
-    public function testCreateUserSuccessfully()
+    public function testCreateUserSuccessfully(): void
     {
         $name = 'John Doe';
         $email = 'john@example.com';
@@ -69,19 +64,21 @@ class CreateUserServiceTest extends TestCase
         $this->userRepository
             ->shouldReceive('save')
             ->once()
+            ->with(Mockery::type(User::class))
             ->andReturn($savedUser);
             
         $this->eventPublisher
             ->shouldReceive('publishUserCreated')
             ->once()
-            ->with($savedUser->getUuid(), $savedUser->getName());
+            ->with($savedUser->getUuid(), $savedUser->getName())
+            ->andReturn(null);
         
         $result = $this->service->execute($name, $email);
         
         $this->assertEquals($savedUser, $result);
     }
 
-    public function testCreateUserWithInvalidNameThrowsException()
+    public function testCreateUserWithInvalidNameThrowsException(): void
     {
         $name = 'Jo';
         $email = 'john@example.com';
@@ -113,7 +110,7 @@ class CreateUserServiceTest extends TestCase
         $this->service->execute($name, $email);
     }
 
-    public function testCreateUserWithInvalidEmailThrowsException()
+    public function testCreateUserWithInvalidEmailThrowsException(): void
     {
         $name = 'John Doe';
         $email = 'invalid-email';
