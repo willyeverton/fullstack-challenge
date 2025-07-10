@@ -1,98 +1,74 @@
-version: "3.9"
+version: '3.8'
 
 services:
+  # User Service (PHP/Lumen)
   user-service:
-    build: ./services/user-service-php
-    container_name: user-service
-    ports:
-      - "8080:80"
+    build:
+      context: ./services/user-service-php
+      target: development
+    volumes:
+      - ./services/user-service-php:/var/www
     environment:
       - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=pgsql
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_DATABASE=users
-      - DB_USERNAME=user
-      - DB_PASSWORD=password
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
     depends_on:
       - postgres
       - rabbitmq
     networks:
-      - backend
+      - app-network
 
-  enrichment-service:
-    build: ./services/enrichment-service-node
-    container_name: enrichment-service
-    ports:
-      - "8081:3000"
-    environment:
-      - NODE_ENV=development
-      - MONGO_URI=mongodb://mongo:27017/enrichment
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-    depends_on:
-      - mongo
-      - rabbitmq
-    networks:
-      - backend
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-      - RABBITMQ_LOAD_DEFINITIONS=true
+  # Nginx for User Service
+  nginx-user:
+    image: nginx:alpine
     volumes:
-      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
+      - ./services/user-service-php:/var/www
+      - ./services/user-service-php/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:80"
+    depends_on:
+      - user-service
     networks:
-      - backend
+      - app-network
 
+  # PostgreSQL
   postgres:
-    image: postgres:15
-    container_name: postgres
+    image: postgres:13-alpine
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
       - POSTGRES_DB=users
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - backend
+      - app-network
 
-  mongo:
-    image: mongo:6
-    container_name: mongo
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
     ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - backend
-
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - "3000:3000"
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
     environment:
-      - REACT_APP_API_URL=http://localhost:8080
-      - REACT_APP_ENRICH_URL=http://localhost:8081
-    depends_on:
-      - user-service
-      - enrichment-service
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - frontend
-      - backend
-
-networks:
-  frontend:
-  backend:
+      - app-network
 
 volumes:
-  postgres-data:
-  mongo-data:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  app-network:
+    driver: bridge

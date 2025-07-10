@@ -1,28 +1,55 @@
-# syntax=docker/dockerfile:1
-FROM php:8.1-apache
+FROM php:8.1-fpm as base
 
-# Install dependencies
-RUN apt-get update \
-    && apt-get install -y libpq-dev git zip unzip \
-    && docker-php-ext-install pdo pdo_pgsql
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpq-dev \
+    libzip-dev \
+    zip \
+    unzip
 
-# Enable Apache mod_rewrite
-RUN a2enmod rewrite
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_pgsql zip
 
 # Install Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
+# Set working directory
+WORKDIR /var/www
 
-COPY composer.json ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
+# Development stage
+FROM base as development
 
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install dependencies
+RUN composer install --prefer-dist --no-scripts --no-progress --no-interaction
+
+# Copy application files
 COPY . .
 
-# Apache site config (basic)
-RUN echo "<Directory /var/www/html/public>\n    AllowOverride All\n</Directory>" > /etc/apache2/conf-available/rewrite.conf && a2enconf rewrite
+# Generate application key
+RUN php artisan key:generate
 
-ENV APP_ENV=local
+# Set permissions
+RUN chown -R www-data:www-data /var/www
 
-EXPOSE 80
-CMD ["apache2-foreground"]
+# Production stage
+FROM base as production
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install dependencies
+RUN composer install --prefer-dist --no-dev --no-scripts --no-progress --no-interaction --optimize-autoloader
+
+# Copy application files
+COPY . .
+
+# Generate application key
+RUN php artisan key:generate
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www
