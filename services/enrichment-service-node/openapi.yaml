@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: Enrichment Service API
+  description: API para enriquecimento de dados de usuário
+  version: 1.0.0
+  contact:
+    name: Equipe de Desenvolvimento
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desenvolvimento local
+
+paths:
+  /users/enriched/{uuid}:
+    get:
+      summary: Obtém dados enriquecidos de um usuário
+      description: Retorna os dados de perfil social enriquecidos para um usuário específico
+      operationId: getEnrichedUserData
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          description: UUID do usuário
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dados enriquecidos encontrados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichedUserData'
+        '404':
+          description: Dados não encontrados ou ainda em processamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Erro interno do servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  
+  /health:
+    get:
+      summary: Verifica a saúde do serviço
+      description: Endpoint para verificar se o serviço está funcionando corretamente
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Serviço está saudável
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '500':
+          description: Serviço não está saudável
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    EnrichedUserData:
+      type: object
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        linkedin:
+          type: string
+          example: "linkedin.com/in/joao-silva"
+        github:
+          type: string
+          example: "github.com/joao-silva"
+        created_at:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+      required:
+        - uuid
+        - linkedin
+        - github
+    
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+          example: "ok"
+        version:
+          type: string
+          example: "1.0.0"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2023-01-01T12:00:00Z"
+        services:
+          type: object
+          properties:
+            mongodb:
+              type: string
+              enum: [ok, error]
+              example: "ok"
+            rabbitmq:
+              type: string
+              enum: [ok, error]
+              example: "ok"
+      required:
+        - status
+        - timestamp
+    
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Ocorreu um erro ao processar a requisição"
+        statusCode:
+          type: integer
+          example: 500
+      required:
+        - message
+        - statusCode 
