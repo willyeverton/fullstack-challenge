@@ -6,7 +6,7 @@ Este repositório contém uma solução completa para um sistema distribuído co
 
 O sistema é composto por três componentes principais que se comunicam de forma assíncrona:
 
-![Arquitetura do Sistema](diagrams/architecture.png)
+![Arquitetura do Sistema](diagrams/architecture.md)
 
 | Componente | Tecnologia | Descrição |
 |-----------|------------|-----------|
@@ -15,6 +15,8 @@ O sistema é composto por três componentes principais que se comunicam de forma
 | Enrichment Service (Serviço B) | Node.js (NestJS) + MongoDB | Serviço responsável pelo enriquecimento de dados de perfil |
 | Mensageria | RabbitMQ com DLX/DLQ | Comunicação assíncrona entre os serviços |
 | Containerização | Docker & Docker Compose | Ambiente de execução isolado e portável |
+
+Para entender melhor o fluxo de dados entre os serviços, consulte o [diagrama de fluxo de dados](diagrams/data-flow.md).
 
 ## Início Rápido
 
@@ -88,6 +90,9 @@ docs/                      # Documentação adicional
   └── architecture.md      # Detalhes da arquitetura de produção
 
 diagrams/                  # Diagramas da arquitetura
+  ├── architecture.md      # Diagrama de arquitetura básica
+  ├── data-flow.md         # Diagrama de fluxo de dados
+  └── production-architecture.md # Diagrama de arquitetura de produção
 ```
 
 ## Arquitetura Detalhada
@@ -145,6 +150,13 @@ O sistema implementa uma estratégia robusta para lidar com falhas:
 - **Descrição**: Endpoint de health check
 - **Resposta**: `200 OK` com status do serviço
 
+## Documentação de API
+
+A documentação completa das APIs está disponível nos seguintes formatos:
+
+- **User Service API**: [OpenAPI Specification](services/user-service-php/openapi.yaml)
+- **Enrichment Service API**: [OpenAPI Specification](services/enrichment-service-node/openapi.yaml)
+
 ## Testes
 
 ### Testes Unitários
@@ -159,6 +171,10 @@ cd services/user-service-php
 # Executar testes do Enrichment Service
 cd services/enrichment-service-node
 npm test
+
+# Executar testes do Frontend
+cd frontend
+npm test
 ```
 
 ### Testes de Integração
@@ -170,9 +186,54 @@ cd tests/integration
 ./run-tests.sh
 ```
 
+## CI/CD Pipeline
+
+O projeto inclui um pipeline de CI/CD configurado com GitHub Actions que automatiza:
+
+1. **Lint e Testes**: Executa linting e testes unitários para cada serviço
+2. **Testes de Integração**: Executa testes de integração entre os serviços
+3. **Build de Imagens Docker**: Constrói e publica imagens Docker para cada serviço
+4. **Deploy**: Prepara o ambiente para deploy em produção
+
+O arquivo de configuração está disponível em [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml).
+
+## Melhorias Implementadas
+
+### Validação e Tratamento de Erros
+- Validação robusta no frontend usando Zod
+- Tratamento de erros centralizado
+- Padronização de respostas de erro em todas as APIs
+
+### Performance
+- Estratégia de cache no frontend para reduzir requisições
+- Otimização de carregamento de dados
+
+### Documentação
+- Documentação de API com OpenAPI/Swagger
+- Diagramas de arquitetura e fluxo de dados
+
+## Melhorias Futuras
+
+### Segurança
+- Implementar autenticação JWT ou OAuth 2.0
+- Adicionar middleware de segurança para prevenção de ataques (CSRF, XSS)
+- Implementar rate limiting nas APIs
+
+### Observabilidade
+- Adicionar ELK Stack ou Prometheus/Grafana para monitoramento
+- Implementar logging estruturado em todos os serviços
+- Adicionar tracing distribuído com Jaeger ou Zipkin
+
+### Testes
+- Aumentar cobertura de testes no frontend e backend
+- Adicionar testes e2e com Cypress ou Playwright
+
+### Cache Distribuído
+- Adicionar Redis para cache de dados frequentemente acessados
+
 ## Arquitetura de Produção
 
-Para detalhes sobre a arquitetura de produção recomendada, incluindo escalabilidade, alta disponibilidade, segurança e observabilidade, consulte [docs/architecture.md](docs/architecture.md).
+Para detalhes sobre a arquitetura de produção recomendada, incluindo escalabilidade, alta disponibilidade, segurança e observabilidade, consulte [docs/architecture.md](docs/architecture.md) e [diagrams/production-architecture.md](diagrams/production-architecture.md).
 
 ## Licença
 
