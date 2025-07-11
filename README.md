@@ -41,7 +41,7 @@ docker-compose up -d --build
 
 Após a inicialização, você pode acessar:
 
-* **Frontend React**: http://localhost:3000
+* **Frontend React**: http://localhost:8000
 * **API do User Service**: http://localhost:8080/api
 * **API do Enrichment Service**: http://localhost:3000/users/enriched
 * **Interface do RabbitMQ**: http://localhost:15672 (usuário: guest, senha: guest)

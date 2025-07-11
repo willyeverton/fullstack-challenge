@@ -7,7 +7,7 @@ services:
       context: ./frontend
       target: production
     ports:
-      - "3000:80"
+      - "8000:80"
     depends_on:
       - user-service
       - enrichment-service
