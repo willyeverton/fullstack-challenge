@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import userService from '../services/userService';
 import enrichmentService from '../services/enrichmentService';
 import type { User, EnrichedUserData } from '../types/user';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
 
 const UserDetailPage = () => {
   const { uuid } = useParams<{ uuid: string }>();
@@ -53,7 +55,8 @@ const UserDetailPage = () => {
     
     try {
       setEnrichmentProcessing(true);
-      const enriched = await enrichmentService.getEnrichedUserData(uuid);
+      // Usa o método de atualização forçada para ignorar o cache
+      const enriched = await enrichmentService.refreshEnrichedUserData(uuid);
       setEnrichedData(enriched);
       setEnrichmentProcessing(false);
       setEnrichmentError(false);
@@ -65,13 +68,13 @@ const UserDetailPage = () => {
   };
 
   if (loading) {
-    return <div className="loading">Carregando dados do usuário...</div>;
+    return <LoadingSpinner message="Carregando dados do usuário..." />;
   }
 
   if (error || !user) {
     return (
       <div className="error-container">
-        <p className="error-message">{error || 'Usuário não encontrado'}</p>
+        <ErrorMessage message={error || 'Usuário não encontrado'} />
         <button onClick={() => navigate('/')}>Voltar para lista</button>
       </div>
     );
@@ -94,12 +97,12 @@ const UserDetailPage = () => {
           
           {enrichmentProcessing ? (
             <div>
-              <p className="processing">Dados ainda em processamento...</p>
+              <LoadingSpinner message="Dados ainda em processamento..." />
               <button onClick={retryEnrichment}>Verificar novamente</button>
             </div>
           ) : enrichmentError ? (
             <div>
-              <p className="error-message">Erro ao carregar dados enriquecidos.</p>
+              <ErrorMessage message="Erro ao carregar dados enriquecidos." />
               <button onClick={retryEnrichment}>Tentar novamente</button>
             </div>
           ) : enrichedData ? (
