@@ -3,6 +3,10 @@ import type { FormEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import userService from '../services/userService';
 import type { CreateUserRequest } from '../types/user';
+import { validateUserInput } from '../utils/validation';
+import type { ApiError } from '../utils/errorHandler';
+import ErrorMessage from '../components/ErrorMessage';
+import SuccessMessage from '../components/SuccessMessage';
 
 const UserCreatePage = () => {
   const navigate = useNavigate();
@@ -10,37 +14,10 @@ const UserCreatePage = () => {
     name: '',
     email: '',
   });
-  const [errors, setErrors] = useState<{ name?: string; email?: string }>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
-
-  const validateForm = (): boolean => {
-    const newErrors: { name?: string; email?: string } = {};
-    let isValid = true;
-
-    // Validação do nome
-    if (!formData.name.trim()) {
-      newErrors.name = 'O nome é obrigatório';
-      isValid = false;
-    } else if (formData.name.trim().length < 3) {
-      newErrors.name = 'O nome deve ter pelo menos 3 caracteres';
-      isValid = false;
-    }
-
-    // Validação do email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email.trim()) {
-      newErrors.email = 'O email é obrigatório';
-      isValid = false;
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Informe um email válido';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -48,12 +25,25 @@ const UserCreatePage = () => {
       ...prev,
       [name]: value,
     }));
+    
+    // Limpa o erro do campo quando o usuário começa a digitar novamente
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    // Validação com Zod
+    const validation = validateUserInput(formData);
+    
+    if (!validation.success) {
+      setErrors(validation.errors || {});
       return;
     }
 
@@ -62,7 +52,8 @@ const UserCreatePage = () => {
       setSubmitError(null);
       setSubmitSuccess(false);
 
-      const response = await userService.createUser(formData);
+      // Usa os dados validados pelo Zod
+      const response = await userService.createUser(validation.data!);
       
       setSubmitSuccess(true);
       setFormData({ name: '', email: '' });
@@ -72,8 +63,16 @@ const UserCreatePage = () => {
         navigate(`/users/${response.uuid}`);
       }, 2000);
     } catch (error) {
-      console.error('Error creating user:', error);
-      setSubmitError('Falha ao criar usuário. Por favor, tente novamente.');
+      const apiError = error as ApiError;
+      console.error('Error creating user:', apiError);
+      
+      // Atualiza os erros de validação, se houver
+      if (apiError.errors) {
+        setErrors(apiError.errors);
+      }
+      
+      // Define a mensagem de erro geral
+      setSubmitError(apiError.message || 'Falha ao criar usuário. Por favor, tente novamente.');
     } finally {
       setSubmitting(false);
     }
@@ -93,6 +92,7 @@ const UserCreatePage = () => {
             value={formData.name}
             onChange={handleChange}
             disabled={submitting}
+            className={errors.name ? 'error' : ''}
           />
           {errors.name && <p className="error-message">{errors.name}</p>}
         </div>
@@ -106,15 +106,15 @@ const UserCreatePage = () => {
             value={formData.email}
             onChange={handleChange}
             disabled={submitting}
+            className={errors.email ? 'error' : ''}
           />
           {errors.email && <p className="error-message">{errors.email}</p>}
         </div>
 
-        {submitError && <p className="error-message">{submitError}</p>}
+        {errors._form && <p className="error-message">{errors._form}</p>}
+        {submitError && <ErrorMessage message={submitError} />}
         {submitSuccess && (
-          <p className="success-message">
-            Usuário criado com sucesso! Redirecionando para a página de detalhes...
-          </p>
+          <SuccessMessage message="Usuário criado com sucesso! Redirecionando para a página de detalhes..." />
         )}
 
         <button type="submit" disabled={submitting}>
