@@ -1,67 +1,179 @@
-# Fullstack Integration Challenge
+# Fullstack Microservices Challenge
 
-This repository contains the solution for the TOTVS **Especialista em Desenvolvimento Fullstack** technical test.
+Este repositório contém uma solução completa para um sistema distribuído com registro de usuários e enriquecimento de perfil, utilizando arquitetura de microsserviços e comunicação assíncrona.
 
-## Stack Overview
+## Visão Geral da Arquitetura
 
-| Component | Technology |
-|-----------|------------|
-| Front-end | React |
-| User Service (Serviço A) | PHP (Lumen) + PostgreSQL |
-| Enrichment Service (Serviço B) | Node.js (framework TBD) + MongoDB |
-| Messaging | RabbitMQ with DLX/DLQ |
-| Containerisation | Docker & Docker Compose |
+O sistema é composto por três componentes principais que se comunicam de forma assíncrona:
 
-## Quick Start
+![Arquitetura do Sistema](diagrams/architecture.png)
+
+| Componente | Tecnologia | Descrição |
+|-----------|------------|-----------|
+| Frontend | React | Interface de usuário com telas de listagem, criação e detalhes de usuários |
+| User Service (Serviço A) | PHP (Lumen) + PostgreSQL | Serviço responsável pelo cadastro e consulta de usuários |
+| Enrichment Service (Serviço B) | Node.js (NestJS) + MongoDB | Serviço responsável pelo enriquecimento de dados de perfil |
+| Mensageria | RabbitMQ com DLX/DLQ | Comunicação assíncrona entre os serviços |
+| Containerização | Docker & Docker Compose | Ambiente de execução isolado e portável |
+
+## Início Rápido
+
+### Pré-requisitos
+
+- Docker e Docker Compose
+- Git
+
+### Instalação e Execução
 
 ```bash
+# Clonar o repositório
 git clone <repo-url>
 cd fullstack-challenge
-cp env.example .env   # adjust credentials if needed
+
+# Configurar variáveis de ambiente (opcional)
+cp env.example .env   # ajuste as credenciais se necessário
+
+# Iniciar todos os serviços
 docker-compose up -d --build
 ```
 
-Then access:
+### Acessando os Serviços
 
-* React front-end: http://localhost:3000
-* User Service API: http://localhost:8080
-* Enrichment Service API: http://localhost:8081
-* RabbitMQ UI: http://localhost:15672 (guest/guest)
+Após a inicialização, você pode acessar:
 
-## Project Structure
+* **Frontend React**: http://localhost:3000
+* **API do User Service**: http://localhost:8080/api
+* **API do Enrichment Service**: http://localhost:3000/users/enriched
+* **Interface do RabbitMQ**: http://localhost:15672 (usuário: guest, senha: guest)
+* **Health Check do Enrichment Service**: http://localhost:3000/health
+
+## Estrutura do Projeto
 
 ```
+frontend/                     # Aplicação React
+  ├── src/                    # Código fonte
+  │   ├── components/         # Componentes reutilizáveis
+  │   ├── pages/              # Páginas da aplicação
+  │   ├── services/           # Serviços de API
+  │   └── types/              # Definições de tipos TypeScript
+  └── Dockerfile              # Configuração de build e deploy
+
 services/
-  user-service-php/        # User Service (Lumen)
-    ├── app/              
-    │   ├── Domain/       # Domain entities and business rules
-    │   ├── Application/  # Use cases and contracts
-    │   │   ├── Contracts/
-    │   │   └── Services/
-    │   ├── Infrastructure/ # Technical implementations
-    │   │   ├── Persistence/
-    │   │   └── Messaging/
-    │   └── Http/        # User interface layer
-    │       └── Controllers/
-    ├── database/        # Migrations and seeders
-    └── tests/          # Unit and integration tests
-  enrichment-service-node/ # Enrichment Service
-frontend/                  # React app
+  ├── user-service-php/       # Serviço de Usuários (PHP/Lumen)
+  │   ├── app/                
+  │   │   ├── Domain/         # Entidades e regras de negócio
+  │   │   ├── Application/    # Casos de uso e contratos
+  │   │   │   ├── Contracts/  # Interfaces
+  │   │   │   └── Services/   # Implementações de serviços
+  │   │   ├── Infrastructure/ # Implementações técnicas
+  │   │   │   ├── Persistence/ # Persistência de dados
+  │   │   │   └── Messaging/   # Comunicação com RabbitMQ
+  │   │   └── Http/          # Camada de apresentação
+  │   │       └── Controllers/ # Controladores REST
+  │   ├── database/          # Migrações e seeders
+  │   └── tests/            # Testes unitários e de integração
+  │
+  └── enrichment-service-node/ # Serviço de Enriquecimento (Node.js/NestJS)
+      ├── src/
+      │   ├── domain/        # Entidades e portas
+      │   ├── application/   # Casos de uso
+      │   ├── infrastructure/ # Adaptadores (MongoDB, RabbitMQ)
+      │   └── presentation/  # Controladores REST
+      └── test/             # Testes unitários e E2E
+
+tests/
+  └── integration/          # Testes de integração entre serviços
+
+docs/                      # Documentação adicional
+  └── architecture.md      # Detalhes da arquitetura de produção
+
+diagrams/                  # Diagramas da arquitetura
 ```
 
-## Architecture
+## Arquitetura Detalhada
 
-The services follow SOLID principles and clean architecture patterns:
+### Princípios Arquiteturais
 
-- **Domain Layer**: Core business logic and entities
-- **Application Layer**: Use cases and interface contracts
-- **Infrastructure Layer**: Technical implementations (database, messaging)
-- **Presentation Layer**: Controllers and API endpoints
+Os serviços seguem os princípios SOLID e padrões de Clean Architecture:
 
-### Message Flow
+- **Camada de Domínio**: Lógica de negócio e entidades centrais
+- **Camada de Aplicação**: Casos de uso e contratos de interface
+- **Camada de Infraestrutura**: Implementações técnicas (banco de dados, mensageria)
+- **Camada de Apresentação**: Controladores e endpoints da API
 
-1. User Service publishes events to RabbitMQ fanout exchange
-2. Messages use DLX (Dead Letter Exchange) for error handling
-3. Failed messages are routed to DLQ (Dead Letter Queue) for retry
+### Fluxo de Mensagens
 
-Further documentation and API specs will be added as development progresses.
+1. O User Service publica eventos para o RabbitMQ após a criação de um usuário
+2. O Enrichment Service consome as mensagens e processa o enriquecimento de dados
+3. Os dados enriquecidos são armazenados no MongoDB
+4. O Frontend consulta ambos os serviços para exibir informações completas
+
+### Estratégia de Retry e Dead Letter Queue
+
+O sistema implementa uma estratégia robusta para lidar com falhas:
+
+1. **Tentativas de Processamento**: Quando o Enrichment Service falha ao processar uma mensagem, ela é rejeitada (nack)
+2. **Dead Letter Exchange (DLX)**: As mensagens rejeitadas são encaminhadas para uma exchange específica
+3. **Dead Letter Queue (DLQ)**: As mensagens são armazenadas em uma fila de mensagens mortas
+4. **Retry com Backoff**: O serviço tenta reprocessar as mensagens com intervalos crescentes
+5. **Limite de Tentativas**: Após um número configurável de tentativas, a mensagem é registrada para análise manual
+
+## APIs
+
+### User Service (PHP/Lumen)
+
+#### POST /api/users
+- **Descrição**: Cria um novo usuário
+- **Corpo**: `{ "name": "string", "email": "string" }`
+- **Resposta**: `201 Created` com dados do usuário criado incluindo UUID
+
+#### GET /api/users
+- **Descrição**: Lista todos os usuários
+- **Resposta**: `200 OK` com array de usuários
+
+#### GET /api/users/{uuid}
+- **Descrição**: Obtém um usuário específico pelo UUID
+- **Resposta**: `200 OK` com dados do usuário ou `404 Not Found`
+
+### Enrichment Service (Node.js/NestJS)
+
+#### GET /users/enriched/{uuid}
+- **Descrição**: Obtém os dados enriquecidos de um usuário
+- **Resposta**: `200 OK` com dados de perfil social ou `404 Not Found`
+
+#### GET /health
+- **Descrição**: Endpoint de health check
+- **Resposta**: `200 OK` com status do serviço
+
+## Testes
+
+### Testes Unitários
+
+Cada serviço possui testes unitários para validar componentes individuais:
+
+```bash
+# Executar testes do User Service
+cd services/user-service-php
+./vendor/bin/phpunit
+
+# Executar testes do Enrichment Service
+cd services/enrichment-service-node
+npm test
+```
+
+### Testes de Integração
+
+Os testes de integração validam o fluxo completo entre os serviços:
+
+```bash
+cd tests/integration
+./run-tests.sh
+```
+
+## Arquitetura de Produção
+
+Para detalhes sobre a arquitetura de produção recomendada, incluindo escalabilidade, alta disponibilidade, segurança e observabilidade, consulte [docs/architecture.md](docs/architecture.md).
+
+## Licença
+
+Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes.

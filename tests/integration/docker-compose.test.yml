@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  # User Service (PHP/Lumen) - Test Environment
+  user-service-test:
+    build:
+      context: ../../services/user-service-php
+      target: development
+    environment:
+      - APP_ENV=testing
+      - APP_DEBUG=true
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_DATABASE=users_test
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-test:5672
+    depends_on:
+      - postgres-test
+      - rabbitmq-test
+    networks:
+      - test-network
+
+  # Nginx for User Service - Test Environment
+  nginx-user-test:
+    image: nginx:alpine
+    volumes:
+      - ../../services/user-service-php:/var/www
+      - ../../services/user-service-php/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8081:80"
+    depends_on:
+      - user-service-test
+    networks:
+      - test-network
+
+  # Enrichment Service (Node.js/NestJS) - Test Environment
+  enrichment-service-test:
+    build:
+      context: ../../services/enrichment-service-node
+      target: development
+    environment:
+      - NODE_ENV=test
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb-test:27017/enrichment_test
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq-test:5672
+      - RABBITMQ_QUEUE=user.created.test
+      - RABBITMQ_DLX=user.created.dlx.test
+      - RABBITMQ_DLQ=user.created.dlq.test
+      - RABBITMQ_RETRY_DELAY=100
+      - RABBITMQ_RETRY_ATTEMPTS=2
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb-test
+      - rabbitmq-test
+    networks:
+      - test-network
+
+  # PostgreSQL - Test Environment
+  postgres-test:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_DB=users_test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+
+  # MongoDB - Test Environment
+  mongodb-test:
+    image: mongo:5-focal
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_test_data:/data/db
+    networks:
+      - test-network
+
+  # RabbitMQ - Test Environment
+  rabbitmq-test:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5673:5672"   # AMQP
+      - "15673:15672" # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_test_data:/var/lib/rabbitmq
+    networks:
+      - test-network
+
+  # Integration Tests Runner
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    environment:
+      - USER_SERVICE_URL=http://nginx-user-test:80/api
+      - ENRICHMENT_SERVICE_URL=http://enrichment-service-test:3001
+      - RABBITMQ_URI=amqp://guest:guest@rabbitmq-test:5672
+      - RABBITMQ_QUEUE=user.created.test
+    volumes:
+      - ./results:/app/results
+    depends_on:
+      - user-service-test
+      - enrichment-service-test
+      - postgres-test
+      - mongodb-test
+      - rabbitmq-test
+    networks:
+      - test-network
+
+volumes:
+  postgres_test_data:
+  mongodb_test_data:
+  rabbitmq_test_data:
+
+networks:
+  test-network:
+    driver: bridge 

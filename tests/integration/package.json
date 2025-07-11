@@ -1,0 +1,37 @@
+{
+  "name": "integration-tests",
+  "version": "1.0.0",
+  "description": "Integration tests for the microservices application",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --runInBand --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "axios": "^1.6.0",
+    "mongodb": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.1",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^18.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/*.test.ts"
+    ],
+    "reporters": [
+      "default",
+      ["./node_modules/jest-html-reporter", {
+        "pageTitle": "Integration Test Report",
+        "outputPath": "./results/test-report.html"
+      }]
+    ]
+  }
+} 

@@ -1,0 +1,18 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy test files
+COPY . .
+
+# Wait for services to be ready
+RUN apk add --no-cache curl
+COPY wait-for-services.sh /usr/local/bin/wait-for-services.sh
+RUN chmod +x /usr/local/bin/wait-for-services.sh
+
+# Run tests
+CMD ["/usr/local/bin/wait-for-services.sh", "npm", "test"] 
