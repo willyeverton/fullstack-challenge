@@ -26,24 +26,34 @@ export function validate(config: Record<string, unknown>) {
   };
 }
 
-export default () => {
-  const config = validate(process.env);
-  
-  return {
-    app: {
-      env: config.NODE_ENV,
-      port: config.PORT,
-      mongodb: {
-        uri: config.MONGODB_URI,
+export default () => ({
+  app: {
+    port: parseInt(process.env.PORT || '3000', 10),
+    environment: process.env.NODE_ENV || 'development',
+    rabbitmq: {
+      uri: process.env.RABBITMQ_URI || 'amqp://guest:guest@localhost:5672',
+      queue: process.env.RABBITMQ_QUEUE || 'user.created',
+      dlx: process.env.RABBITMQ_DLX || 'user.created.dlx',
+      dlq: process.env.RABBITMQ_DLQ || 'user.created.dlq',
+      retryAttempts: parseInt(process.env.RABBITMQ_RETRY_ATTEMPTS || '3', 10),
+    },
+    mongodb: {
+      uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/enrichment',
+    },
+    resilience: {
+      circuitBreaker: {
+        timeout: parseInt(process.env.CIRCUIT_BREAKER_TIMEOUT || '3000', 10),
+        errorThresholdPercentage: parseInt(process.env.CIRCUIT_BREAKER_ERROR_THRESHOLD || '50', 10),
+        resetTimeout: parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT || '30000', 10),
+        volumeThreshold: parseInt(process.env.CIRCUIT_BREAKER_VOLUME_THRESHOLD || '10', 10),
       },
-      rabbitmq: {
-        uri: config.RABBITMQ_URI,
-        queue: config.RABBITMQ_QUEUE,
-        dlx: config.RABBITMQ_DLX,
-        dlq: config.RABBITMQ_DLQ,
-        retryDelay: config.RABBITMQ_RETRY_DELAY,
-        retryAttempts: config.RABBITMQ_RETRY_ATTEMPTS,
+      retry: {
+        maxAttempts: parseInt(process.env.RETRY_MAX_ATTEMPTS || '5', 10),
+        baseDelay: parseInt(process.env.RETRY_BASE_DELAY || '1000', 10),
+        maxDelay: parseInt(process.env.RETRY_MAX_DELAY || '30000', 10),
+        backoffMultiplier: parseFloat(process.env.RETRY_BACKOFF_MULTIPLIER || '2'),
+        jitter: process.env.RETRY_JITTER !== 'false',
       },
     },
-  };
-}; 
+  },
+});

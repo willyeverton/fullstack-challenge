@@ -1,240 +1,397 @@
-# Fullstack Microservices Challenge
+# 🏭 Fullstack Microservices Challenge
 
-Este repositório contém uma solução completa para um sistema distribuído com registro de usuários e enriquecimento de perfil, utilizando arquitetura de microsserviços e comunicação assíncrona.
+Um sistema distribuído completo com frontend React, backend PHP (User Service), backend Node.js (Enrichment Service) e comunicação assíncrona via RabbitMQ.
 
-## Visão Geral da Arquitetura
+## 🏗️ Arquitetura
 
-O sistema é composto por três componentes principais que se comunicam de forma assíncrona:
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Frontend  │    │ User Service│    │Enrichment   │
+│   (React)   │◄──►│   (PHP)     │───►│ Service     │
+│             │    │             │    │ (Node.js)   │
+└─────────────┘    └─────────────┘    └─────────────┘
+                          │                   │
+                          ▼                   ▼
+                   ┌─────────────┐    ┌─────────────┐
+                   │ PostgreSQL  │    │   MongoDB   │
+                   │             │    │             │
+                   └─────────────┘    └─────────────┘
+                          │                   │
+                          └───────┬───────────┘
+                                  ▼
+                          ┌─────────────┐
+                          │  RabbitMQ   │
+                          │             │
+                          └─────────────┘
+```
 
-![Arquitetura do Sistema](diagrams/architecture.md)
+## 🚀 Tecnologias
 
-| Componente | Tecnologia | Descrição |
-|-----------|------------|-----------|
-| Frontend | React | Interface de usuário com telas de listagem, criação e detalhes de usuários |
-| User Service (Serviço A) | PHP (Lumen) + PostgreSQL | Serviço responsável pelo cadastro e consulta de usuários |
-| Enrichment Service (Serviço B) | Node.js (NestJS) + MongoDB | Serviço responsável pelo enriquecimento de dados de perfil |
-| Mensageria | RabbitMQ com DLX/DLQ | Comunicação assíncrona entre os serviços |
-| Containerização | Docker & Docker Compose | Ambiente de execução isolado e portável |
+### Frontend
+- **React** com TypeScript
+- **Vite** para build e desenvolvimento
+- **Axios** para requisições HTTP
+- **Vitest** para testes
 
-Para entender melhor o fluxo de dados entre os serviços, consulte o [diagrama de fluxo de dados](diagrams/data-flow.md).
+### User Service (PHP/Lumen)
+- **Lumen Framework** (micro-framework Laravel)
+- **PostgreSQL** como banco relacional
+- **UUID v4** para identificadores únicos
+- **RabbitMQ** para publicação de mensagens
 
-## Início Rápido
+### Enrichment Service (Node.js/NestJS)
+- **NestJS** com TypeScript
+- **MongoDB** como banco não-relacional
+- **RabbitMQ** para consumo de mensagens
+- **Circuit Breaker** com opossum
+- **Retry Strategy** com exponential backoff
+
+### Infraestrutura
+- **Docker** e **Docker Compose**
+- **Health Checks** para todos os serviços
+- **Graceful Degradation** implementado
+
+## 🏭 Funcionalidades de Produção
+
+### Resilience Patterns
+- ✅ **Circuit Breaker**: Proteção contra falhas em cascata
+- ✅ **Retry com Exponential Backoff**: Reconexão inteligente
+- ✅ **Health Checks**: Monitoramento de saúde dos serviços
+- ✅ **Graceful Degradation**: Sistema continua funcionando mesmo com falhas
+- ✅ **Dead Letter Queue**: Tratamento de mensagens com falha
+
+### Observability
+- ✅ **Health Endpoints**: `/health` em todos os serviços
+- ✅ **Circuit Breaker Stats**: `/health/circuit-breakers`
+- ✅ **Structured Logging**: Logs organizados e informativos
+- ✅ **Error Handling**: Tratamento robusto de erros
+
+## 🚀 Setup Rápido
 
 ### Pré-requisitos
-
 - Docker e Docker Compose
-- Git
+- Node.js 18+ (para desenvolvimento local)
+- PHP 8.1+ (para desenvolvimento local)
 
-### Instalação e Execução
-
+### Iniciar o Sistema
 ```bash
-# Clonar o repositório
-git clone <repo-url>
+# Clone o repositório
+git clone <repository-url>
 cd fullstack-challenge
 
-# Configurar variáveis de ambiente (opcional)
-cp env.example .env   # ajuste as credenciais se necessário
-
 # Iniciar todos os serviços
-docker-compose up -d --build
+docker-compose up -d
+
+# Aguardar inicialização (2-3 minutos)
+sleep 180
+
+# Testar o sistema
+./test-system.sh
 ```
 
-### Acessando os Serviços
+### URLs dos Serviços
+- **Frontend**: http://localhost:8000
+- **User Service API**: http://localhost:8080/api/users
+- **Enrichment Service API**: http://localhost:3000/users/enriched/{uuid}
+- **Health Checks**:
+  - http://localhost:8080/health
+  - http://localhost:3000/health
+- **RabbitMQ Management**: http://localhost:15672 (guest/guest)
 
-Após a inicialização, você pode acessar:
-
-* **Frontend React**: http://localhost:8000
-* **API do User Service**: http://localhost:8080/api
-* **API do Enrichment Service**: http://localhost:3000/users/enriched
-* **Interface do RabbitMQ**: http://localhost:15672 (usuário: guest, senha: guest)
-* **Health Check do Enrichment Service**: http://localhost:3000/health
-
-## Estrutura do Projeto
-
-```
-frontend/                     # Aplicação React
-  ├── src/                    # Código fonte
-  │   ├── components/         # Componentes reutilizáveis
-  │   ├── pages/              # Páginas da aplicação
-  │   ├── services/           # Serviços de API
-  │   └── types/              # Definições de tipos TypeScript
-  └── Dockerfile              # Configuração de build e deploy
-
-services/
-  ├── user-service-php/       # Serviço de Usuários (PHP/Lumen)
-  │   ├── app/                
-  │   │   ├── Domain/         # Entidades e regras de negócio
-  │   │   ├── Application/    # Casos de uso e contratos
-  │   │   │   ├── Contracts/  # Interfaces
-  │   │   │   └── Services/   # Implementações de serviços
-  │   │   ├── Infrastructure/ # Implementações técnicas
-  │   │   │   ├── Persistence/ # Persistência de dados
-  │   │   │   └── Messaging/   # Comunicação com RabbitMQ
-  │   │   └── Http/          # Camada de apresentação
-  │   │       └── Controllers/ # Controladores REST
-  │   ├── database/          # Migrações e seeders
-  │   └── tests/            # Testes unitários e de integração
-  │
-  └── enrichment-service-node/ # Serviço de Enriquecimento (Node.js/NestJS)
-      ├── src/
-      │   ├── domain/        # Entidades e portas
-      │   ├── application/   # Casos de uso
-      │   ├── infrastructure/ # Adaptadores (MongoDB, RabbitMQ)
-      │   └── presentation/  # Controladores REST
-      └── test/             # Testes unitários e E2E
-
-tests/
-  └── integration/          # Testes de integração entre serviços
-
-docs/                      # Documentação adicional
-  └── architecture.md      # Detalhes da arquitetura de produção
-
-diagrams/                  # Diagramas da arquitetura
-  ├── architecture.md      # Diagrama de arquitetura básica
-  ├── data-flow.md         # Diagrama de fluxo de dados
-  └── production-architecture.md # Diagrama de arquitetura de produção
-```
-
-## Arquitetura Detalhada
-
-### Princípios Arquiteturais
-
-Os serviços seguem os princípios SOLID e padrões de Clean Architecture:
-
-- **Camada de Domínio**: Lógica de negócio e entidades centrais
-- **Camada de Aplicação**: Casos de uso e contratos de interface
-- **Camada de Infraestrutura**: Implementações técnicas (banco de dados, mensageria)
-- **Camada de Apresentação**: Controladores e endpoints da API
-
-### Fluxo de Mensagens
-
-1. O User Service publica eventos para o RabbitMQ após a criação de um usuário
-2. O Enrichment Service consome as mensagens e processa o enriquecimento de dados
-3. Os dados enriquecidos são armazenados no MongoDB
-4. O Frontend consulta ambos os serviços para exibir informações completas
-
-### Estratégia de Retry e Dead Letter Queue
-
-O sistema implementa uma estratégia robusta para lidar com falhas:
-
-1. **Tentativas de Processamento**: Quando o Enrichment Service falha ao processar uma mensagem, ela é rejeitada (nack)
-2. **Dead Letter Exchange (DLX)**: As mensagens rejeitadas são encaminhadas para uma exchange específica
-3. **Dead Letter Queue (DLQ)**: As mensagens são armazenadas em uma fila de mensagens mortas
-4. **Retry com Backoff**: O serviço tenta reprocessar as mensagens com intervalos crescentes
-5. **Limite de Tentativas**: Após um número configurável de tentativas, a mensagem é registrada para análise manual
-
-## APIs
+## 📋 API Endpoints
 
 ### User Service (PHP/Lumen)
 
 #### POST /api/users
-- **Descrição**: Cria um novo usuário
-- **Corpo**: `{ "name": "string", "email": "string" }`
-- **Resposta**: `201 Created` com dados do usuário criado incluindo UUID
+Cria um novo usuário e publica mensagem no RabbitMQ.
+
+**Request:**
+```json
+{
+  "name": "João Silva",
+  "email": "joao@example.com"
+}
+```
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "João Silva",
+  "email": "joao@example.com",
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:30:00Z"
+}
+```
 
 #### GET /api/users
-- **Descrição**: Lista todos os usuários
-- **Resposta**: `200 OK` com array de usuários
+Lista todos os usuários.
 
-#### GET /api/users/{uuid}
-- **Descrição**: Obtém um usuário específico pelo UUID
-- **Resposta**: `200 OK` com dados do usuário ou `404 Not Found`
+**Response (200):**
+```json
+[
+  {
+    "id": 1,
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "João Silva",
+    "email": "joao@example.com"
+  }
+]
+```
+
+#### GET /api/users/{id}
+Retorna um usuário específico.
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "João Silva",
+  "email": "joao@example.com"
+}
+```
 
 ### Enrichment Service (Node.js/NestJS)
 
 #### GET /users/enriched/{uuid}
-- **Descrição**: Obtém os dados enriquecidos de um usuário
-- **Resposta**: `200 OK` com dados de perfil social ou `404 Not Found`
+Retorna dados enriquecidos do usuário.
+
+**Response (200):**
+```json
+{
+  "linkedin": "linkedin.com/in/joao-silva",
+  "github": "github.com/joao-silva"
+}
+```
 
 #### GET /health
-- **Descrição**: Endpoint de health check
-- **Resposta**: `200 OK` com status do serviço
+Health check do serviço.
 
-## Documentação de API
-
-A documentação completa das APIs está disponível nos seguintes formatos:
-
-- **User Service API**: [OpenAPI Specification](services/user-service-php/openapi.yaml)
-- **Enrichment Service API**: [OpenAPI Specification](services/enrichment-service-node/openapi.yaml)
-
-## Testes
-
-### Testes Unitários
-
-Cada serviço possui testes unitários para validar componentes individuais:
-
-```bash
-# Executar testes do User Service
-cd services/user-service-php
-./vendor/bin/phpunit
-
-# Executar testes do Enrichment Service
-cd services/enrichment-service-node
-npm test
-
-# Executar testes do Frontend
-cd frontend
-npm test
+**Response (200):**
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "uptime": 3600
+}
 ```
 
-### Testes de Integração
+#### GET /health/circuit-breakers
+Estatísticas dos circuit breakers.
 
-Os testes de integração validam o fluxo completo entre os serviços:
-
-```bash
-cd tests/integration
-./run-tests.sh
+**Response (200):**
+```json
+{
+  "rabbitmq-connection": {
+    "name": "rabbitmq-connection",
+    "state": "CLOSED",
+    "stats": {
+      "successes": 10,
+      "failures": 0,
+      "fallbacks": 0,
+      "timeouts": 0,
+      "rejects": 0
+    }
+  }
+}
 ```
 
-## CI/CD Pipeline
+## 🧪 Testes
 
-O projeto inclui um pipeline de CI/CD configurado com GitHub Actions que automatiza:
+### Teste Automatizado
+```bash
+# Executar teste completo do sistema
+./test-system.sh
+```
 
-1. **Lint e Testes**: Executa linting e testes unitários para cada serviço
-2. **Testes de Integração**: Executa testes de integração entre os serviços
-3. **Build de Imagens Docker**: Constrói e publica imagens Docker para cada serviço
-4. **Deploy**: Prepara o ambiente para deploy em produção
+### Testes Manuais
+```bash
+# Testar criação de usuário
+curl -X POST http://localhost:8080/api/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test User","email":"test@example.com"}'
 
-O arquivo de configuração está disponível em [.github/workflows/ci-cd.yml](.github/workflows/ci-cd.yml).
+# Listar usuários
+curl http://localhost:8080/api/users
 
-## Melhorias Implementadas
+# Testar enriquecimento (substitua {uuid} pelo UUID real)
+curl http://localhost:3000/users/enriched/{uuid}
+```
 
-### Validação e Tratamento de Erros
-- Validação robusta no frontend usando Zod
-- Tratamento de erros centralizado
-- Padronização de respostas de erro em todas as APIs
+## 🏗️ Estrutura do Projeto
 
-### Performance
-- Estratégia de cache no frontend para reduzir requisições
-- Otimização de carregamento de dados
+```
+fullstack-challenge/
+├── frontend/                    # React frontend
+│   ├── src/
+│   │   ├── components/         # Componentes React
+│   │   ├── pages/             # Páginas da aplicação
+│   │   ├── services/          # Serviços de API
+│   │   └── types/             # Tipos TypeScript
+│   └── package.json
+├── services/
+│   ├── user-service-php/       # Serviço PHP/Lumen
+│   │   ├── app/
+│   │   │   ├── Application/   # Camada de aplicação
+│   │   │   ├── Domain/        # Entidades de domínio
+│   │   │   ├── Infrastructure/ # Implementações
+│   │   │   └── Http/          # Controllers
+│   │   └── composer.json
+│   └── enrichment-service-node/ # Serviço Node.js/NestJS
+│       ├── src/
+│       │   ├── application/   # Casos de uso
+│       │   ├── domain/        # Entidades e interfaces
+│       │   ├── infrastructure/ # Implementações
+│       │   │   ├── resilience/ # Circuit breaker e retry
+│       │   │   └── messaging/  # RabbitMQ
+│       │   └── presentation/  # Controllers
+│       └── package.json
+├── docker-compose.yml          # Orquestração dos serviços
+├── test-system.sh             # Script de teste
+└── README.md
+```
 
-### Documentação
-- Documentação de API com OpenAPI/Swagger
-- Diagramas de arquitetura e fluxo de dados
+## 🔧 Configuração de Produção
 
-## Melhorias Futuras
+### Variáveis de Ambiente
 
-### Segurança
-- Implementar autenticação JWT ou OAuth 2.0
-- Adicionar middleware de segurança para prevenção de ataques (CSRF, XSS)
-- Implementar rate limiting nas APIs
+#### User Service (.env)
+```env
+APP_DEBUG=false
+DB_CONNECTION=pgsql
+DB_HOST=postgres
+DB_PORT=5432
+DB_DATABASE=user_service
+DB_USERNAME=postgres
+DB_PASSWORD=password
 
-### Observabilidade
-- Adicionar ELK Stack ou Prometheus/Grafana para monitoramento
-- Implementar logging estruturado em todos os serviços
-- Adicionar tracing distribuído com Jaeger ou Zipkin
+RABBITMQ_HOST=rabbitmq
+RABBITMQ_PORT=5672
+RABBITMQ_USER=guest
+RABBITMQ_PASS=guest
+RABBITMQ_QUEUE=user.created
+```
 
-### Testes
-- Aumentar cobertura de testes no frontend e backend
-- Adicionar testes e2e com Cypress ou Playwright
+#### Enrichment Service (.env)
+```env
+NODE_ENV=production
+PORT=3000
 
-### Cache Distribuído
-- Adicionar Redis para cache de dados frequentemente acessados
+RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+RABBITMQ_QUEUE=user.created
+RABBITMQ_DLX=user.created.dlx
+RABBITMQ_DLQ=user.created.dlq
+RABBITMQ_RETRY_ATTEMPTS=3
 
-## Arquitetura de Produção
+MONGODB_URI=mongodb://mongodb:27017/enrichment
 
-Para detalhes sobre a arquitetura de produção recomendada, incluindo escalabilidade, alta disponibilidade, segurança e observabilidade, consulte [docs/architecture.md](docs/architecture.md) e [diagrams/production-architecture.md](diagrams/production-architecture.md).
+# Circuit Breaker
+CIRCUIT_BREAKER_TIMEOUT=3000
+CIRCUIT_BREAKER_ERROR_THRESHOLD=50
+CIRCUIT_BREAKER_RESET_TIMEOUT=30000
 
-## Licença
+# Retry Strategy
+RETRY_MAX_ATTEMPTS=5
+RETRY_BASE_DELAY=1000
+RETRY_MAX_DELAY=30000
+RETRY_BACKOFF_MULTIPLIER=2
+RETRY_JITTER=true
+```
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo LICENSE para detalhes.
+### Health Checks
+Todos os serviços incluem health checks configurados no Docker Compose:
+
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+```
+
+## 🚀 Deploy em Produção
+
+### 1. Preparação
+```bash
+# Build das imagens
+docker-compose build
+
+# Verificar configurações
+docker-compose config
+```
+
+### 2. Deploy
+```bash
+# Deploy com health checks
+docker-compose up -d
+
+# Verificar status
+docker-compose ps
+```
+
+### 3. Monitoramento
+```bash
+# Ver logs
+docker-compose logs -f
+
+# Verificar health checks
+docker-compose ps
+```
+
+## 🔍 Troubleshooting
+
+### Problemas Comuns
+
+#### 1. RabbitMQ não conecta
+```bash
+# Verificar se RabbitMQ está rodando
+docker-compose ps rabbitmq
+
+# Verificar logs
+docker-compose logs rabbitmq
+
+# O sistema implementa retry automático
+```
+
+#### 2. Enrichment Service não processa mensagens
+```bash
+# Verificar health check
+curl http://localhost:3000/health
+
+# Verificar circuit breaker stats
+curl http://localhost:3000/health/circuit-breakers
+
+# Verificar logs
+docker-compose logs enrichment-service-node
+```
+
+#### 3. Frontend não carrega
+```bash
+# Verificar se frontend está rodando
+docker-compose ps frontend
+
+# Verificar logs
+docker-compose logs frontend
+```
+
+## 📈 Melhorias Futuras
+
+- [ ] Implementar autenticação JWT
+- [ ] Adicionar rate limiting
+- [ ] Implementar cache Redis
+- [ ] Adicionar métricas Prometheus
+- [ ] Implementar tracing distribuído
+- [ ] Adicionar testes de integração
+- [ ] Implementar CI/CD pipeline
+- [ ] Adicionar documentação OpenAPI/Swagger
+
+## 📄 Licença
+
+Este projeto é parte de um desafio técnico e está disponível para fins educacionais.
+
+---
+
+**Desenvolvido com Clean Architecture, Domain-Driven Design e padrões de resiliência para produção.**
