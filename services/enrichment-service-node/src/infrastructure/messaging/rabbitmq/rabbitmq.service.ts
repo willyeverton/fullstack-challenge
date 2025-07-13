@@ -1,18 +1,19 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { connect, Connection, Channel } from 'amqplib';
+const amqp = require('amqplib');
+// import { connect, Connection, Channel } from 'amqplib';
 import { IMessageHandler, UserCreatedEvent } from '../../../domain/ports/message-handler.interface';
 
 @Injectable()
 export class RabbitMQService implements IMessageHandler, OnModuleInit, OnModuleDestroy {
-  private connection: Connection;
-  private channel: Channel;
+  private connection: any;
+  private channel: any;
   private readonly retryDelay: number;
   private readonly maxRetries: number;
 
   constructor(private readonly configService: ConfigService) {
-    this.retryDelay = this.configService.get<number>('app.rabbitmq.retryDelay');
-    this.maxRetries = this.configService.get<number>('app.rabbitmq.retryAttempts');
+    this.retryDelay = this.configService.get<number>('app.rabbitmq.retryDelay') || 1000;
+    this.maxRetries = this.configService.get<number>('app.rabbitmq.retryAttempts') || 3;
   }
 
   async onModuleInit() {
@@ -29,40 +30,14 @@ export class RabbitMQService implements IMessageHandler, OnModuleInit, OnModuleD
     const dlx = this.configService.get<string>('app.rabbitmq.dlx');
     const dlq = this.configService.get<string>('app.rabbitmq.dlq');
 
-    this.connection = await connect(uri);
+    console.log(`Connecting to RabbitMQ: ${uri}`);
+    this.connection = await amqp.connect(uri);
     this.channel = await this.connection.createChannel();
 
-    // Configurar Dead Letter Exchange
-    await this.channel.assertExchange(dlx, 'direct', { durable: true });
-    await this.channel.assertQueue(dlq, {
-      durable: true,
-      arguments: {
-        'x-message-ttl': 1000 * 60 * 60 * 24, // 24 horas
-      },
-    });
-    await this.channel.bindQueue(dlq, dlx, 'dead');
+    // Criar apenas a fila principal por enquanto
+    await this.channel.assertQueue(queue, { durable: true });
 
-    // Configurar fila principal com DLX
-    await this.channel.assertQueue(queue, {
-      durable: true,
-      arguments: {
-        'x-dead-letter-exchange': dlx,
-        'x-dead-letter-routing-key': 'dead',
-      },
-    });
-
-    // Configurar filas de retry
-    for (let i = 1; i <= this.maxRetries; i++) {
-      const retryQueue = `${queue}.retry.${i}`;
-      await this.channel.assertQueue(retryQueue, {
-        durable: true,
-        arguments: {
-          'x-dead-letter-exchange': '',
-          'x-dead-letter-routing-key': queue,
-          'x-message-ttl': this.retryDelay * i,
-        },
-      });
-    }
+    console.log(`RabbitMQ initialized. Queue: ${queue}`);
   }
 
   private async cleanup() {

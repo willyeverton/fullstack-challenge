@@ -3,7 +3,6 @@ vendor/
 .env
 .env.*
 .DS_Store
-.cursorrules
 .idea/
 .vscode/
 dist/

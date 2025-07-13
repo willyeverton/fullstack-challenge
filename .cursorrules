@@ -1,0 +1,278 @@
+# FULL STACK MICROSERVICES PROJECT - TECHNICAL SPECIFICATION
+
+## PROJECT OVERVIEW
+This is a distributed application system with user registration and profile enrichment capabilities.
+The system consists of a React frontend, PHP backend service (User Service), Node.js backend service (Enrichment Service), and asynchronous communication via message queues.
+
+## TECHNOLOGY STACK
+
+### Frontend
+- **Framework:** React
+- **Styling:** Minimal styling (functionality focus)
+- **HTTP Client:** Axios or Fetch API
+
+### Service A (User Service)
+- **Framework:** PHP Lumen
+- **Database:** PostgreSQL or MySQL (Relational)
+- **Queue:** RabbitMQ, Kafka, or Redis Streams
+- **UUID Generation:** UUID v4
+
+### Service B (Enrichment Service)
+- **Framework:** Node.js NestJS
+- **Database:** MongoDB (Non-relational)
+- **Queue Consumer:** Same as Service A
+
+### Infrastructure
+- **Containers:** Docker + Docker Compose
+- **Environment:** .env files with .env.example
+
+## DEVELOPMENT METHODOLOGY - MEMORY AND CONTEXT RULES
+
+### CRITICAL: Always Review Existing Code First
+- BEFORE implementing any feature, always search and review existing similar implementations
+- Use @codebase to search for existing patterns, functions, and components
+- Never reimplement existing functionality - extend or modify existing code
+- Always check if utilities, helpers, or similar components already exist
+- Maintain consistency with existing code patterns and naming conventions
+
+### Code Review Process
+1. Search codebase for similar implementations using @codebase
+2. Check existing folder structure and follow established patterns
+3. Review existing imports and dependencies
+4. Verify naming conventions used in the project
+5. Check if there are existing types, interfaces, or schemas to reuse
+
+### Implementation Rules
+- Always reuse existing components, utilities, and patterns
+- If modifying existing code, explain what changes are being made and why
+- Maintain the same coding style and patterns found in the codebase
+- Use existing error handling patterns consistently
+- Follow the same state management approach used in the project
+
+### Before Any Implementation
+- Ask: "Does this functionality already exist in the codebase?"
+- Search for: similar components, utilities, API patterns, database schemas
+- Review: existing folder structure, naming conventions, import patterns
+- Verify: current tech stack and dependencies already in use
+
+### Memory Persistence
+- Reference specific file paths when explaining implementations
+- Maintain context of previously implemented features
+- Build upon existing architecture rather than creating new patterns
+- Document any architectural decisions or patterns established
+
+### Project-Specific Context Maintenance
+- Remember the microservices architecture (Frontend → Service A → Queue → Service B)
+- Maintain consistency between PHP Lumen patterns and Node.js NestJS patterns
+- Keep track of database schemas across both relational and non-relational databases
+- Remember queue message formats and ensure consistency
+- Maintain Docker Compose service definitions and dependencies
+
+## DETAILED REQUIREMENTS
+
+### 1. FRONTEND - REACT APPLICATION
+
+#### User List Screen
+- Display list of all users
+- Make GET request to Service A `/users` endpoint
+- Show user data in clean format
+
+#### User Creation Screen
+- Form with fields: `name` and `email`
+- Submit POST request to Service A `/users` endpoint
+- **CRITICAL:** Show success/failure feedback to user
+- Form validation on frontend
+
+#### User Detail Screen
+- Triggered when user clicks on user from list
+- **Step 1:** GET request to Service A `/users/{id}` for basic data
+- **Step 2:** After receiving Service A data, GET request to Service B `/users/enriched/{uuid}`
+- Display both Service A and Service B data clearly (Name, Email, LinkedIn, GitHub)
+- **CRITICAL:** Handle case when enrichment is still processing - show "Data processing" message
+
+### 2. SERVICE A - PHP LUMEN (USER SERVICE)
+
+#### API Endpoints Required
+
+##### POST /users
+- **Input:** `{"name": "string", "email": "string"}`
+- **Validations:**
+  - `name`: Required, minimum 3 characters
+  - `email`: Required, valid email format
+  - Return 400 status with clear error messages for validation failures
+- **Process:**
+  1. Persist user in relational database
+  2. Generate UUID v4 for user and store it
+  3. **CRITICAL:** Publish message to queue with user UUID and name (JSON format)
+  4. Return created user with 201 status including UUID
+
+##### GET /users
+- Return list of all users with: id, uuid, name, email
+- Status 200
+
+##### GET /users/{id}
+- Return specific user by primary key id
+- Return 404 if not found
+- Include all user data: id, uuid, name, email
+
+#### Database Requirements
+- Use database migrations
+- Store: id (primary key), uuid (v4), name, email, timestamps
+
+#### Queue Publishing
+- Publish message after successful user creation
+- Message format: JSON with minimum uuid and name fields
+- Ensure message is published only after successful database persistence
+
+### 3. SERVICE B - NODE.JS NESTJS (ENRICHMENT SERVICE)
+
+#### Queue Consumer
+- Listen to message queue continuously
+- Process messages containing user uuid and name
+- **CRITICAL:** Generate fake social profile data:
+  - `linkedin`: `"linkedin.com/in/[normalized_username]"`
+  - `github`: `"github.com/[normalized_username]"`
+  - Username derived from simplified/normalized name
+- Persist enriched data (uuid + social data) in MongoDB
+- **Error Handling:** Implement retry mechanism and dead-letter queue strategy
+
+#### API Endpoints Required
+
+##### GET /users/enriched/{uuid}
+- **Input:** User UUID from URL parameter
+- **Process:** Search enriched data in MongoDB by UUID
+- **Output:** Return enriched data: `{"linkedin": "...", "github": "..."}`
+- **Status Codes:**
+  - 200: Data found and returned
+  - 404: UUID not found OR data not yet processed
+
+### 4. INFRASTRUCTURE REQUIREMENTS
+
+#### Docker Setup
+- All services must run in containers
+- **CRITICAL:** Complete setup with `docker-compose up -d`
+- Include all dependencies: databases, queue service, all application services
+
+#### Environment Configuration
+- Use .env files for all configuration
+- **CRITICAL:** Provide .env.example files
+- Include: database credentials, queue connection, service URLs
+
+#### Database Setup
+- Service A: PostgreSQL/MySQL with migrations
+- Service B: MongoDB setup
+- Both must be included in docker-compose
+
+#### Queue Service
+- RabbitMQ, Kafka, or Redis Streams in docker-compose
+- Properly configured for Service A publishing and Service B consuming
+
+### 5. DOCUMENTATION REQUIREMENTS
+
+#### README.md Must Include
+- **CRITICAL:** Clear setup instructions for entire environment
+- **CRITICAL:** Single command setup: `docker-compose up -d`
+- Brief project description
+- Architecture explanation
+- Any necessary justifications for technical decisions
+
+#### Code Quality Standards
+- Clean, organized, maintainable code
+- Proper error handling throughout
+- Consistent naming conventions
+- Appropriate comments for complex logic
+
+### 6. PRODUCTION ARCHITECTURE DIAGRAM
+
+Design and create a production-ready architecture diagram including:
+
+#### Required Elements
+1. **Scalability:** How to scale each service
+2. **Load Balancing:** Distribution of traffic
+3. **High Availability:** Redundancy and failover
+4. **Security:** Authentication, authorization, data protection
+5. **Observability:** Monitoring, logging, tracing
+6. **Caching:** CDN for static assets, Redis for dynamic data
+7. **CI/CD:** Automated build and deployment pipeline
+
+#### Delivery Format
+- Use Draw.io, Miro, Lucidchart, or similar tool
+- Include all components and their relationships
+- Show data flow and communication paths
+
+## CRITICAL DEVELOPMENT RULES
+
+### Code Quality Requirements
+- All validation must be implemented as specified
+- All HTTP status codes must be returned correctly
+- All error messages must be clear and helpful
+- All database operations must use proper transactions where needed
+- All queue operations must be reliable and handle failures
+
+### Testing Requirements
+- Implement error handling for all scenarios
+- Test queue message processing thoroughly
+- Test database connection failures
+- Test API endpoint edge cases
+
+### Communication Between Services
+- Service A must publish to queue ONLY after successful database save
+- Service B must consume messages reliably
+- Frontend must handle both services being available/unavailable
+- All async operations must have proper error handling
+
+## EVALUATION CRITERIA
+- Complete functionality of all requirements
+- Code quality and organization
+- Proper use of Docker and Docker Compose
+- Correct implementation of asynchronous communication
+- Quality of documentation
+- Development best practices implementation
+- Additional improvements and optimizations
+
+## DELIVERY CHECKLIST
+- [ ] React frontend with all three screens working
+- [ ] PHP Lumen service with all endpoints
+- [ ] Node.js NestJS service with queue consumer and API
+- [ ] Docker Compose setup working with single command
+- [ ] All databases properly configured and migrated
+- [ ] Queue service working between services
+- [ ] README.md with complete setup instructions
+- [ ] .env.example files for all services
+- [ ] Production architecture diagram
+- [ ] All error handling implemented
+- [ ] All validation rules working as specified
+
+## IMPORTANT NOTES
+- Focus on functionality first, then optimization
+- All services must be containerized
+- All communication must work as specified
+- Documentation must be complete and accurate
+- Architecture diagram must address all production concerns
+
+## DIRECTORY NAVIGATION RULES - CRITICAL
+
+### MANDATORY VERIFICATION PATTERN
+Before executing ANY command or creating ANY file:
+1. ALWAYS start with: pwd
+2. ALWAYS verify with: ls -la
+3. If wrong directory, navigate first
+4. Verify navigation worked: pwd
+5. Then execute the intended action
+
+### COMMAND LOCATION RULES
+- Docker commands: ONLY from project root (where docker-compose.yml is)
+- Frontend NPM: ONLY from frontend/ directory
+- Service A Composer: ONLY from services/user-service-php/ directory
+- Service B NPM: ONLY from services/enrichment-service-node/ directory
+
+### ERROR PREVENTION
+- If command fails, first check: pwd
+- If package.json not found, you're probably in wrong directory
+- If composer.json not found, you're probably in wrong directory
+- If docker-compose.yml not found, you're not in project root
+
+### NAVIGATION SAFETY
+- NEVER execute commands without first running: pwd
+- NEVER create files without verifying directory: ls -la
+- If unsure: pwd → ls -la → navigate → pwd → execute

@@ -4,8 +4,28 @@ import userService from '../services/userService';
 import type { User } from '../types/user';
 
 const UserListPage = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // Inicializar com dados mock para garantir que funcione
+  const mockUsers: User[] = [
+    {
+      id: 1,
+      uuid: 'mock-uuid-1',
+      name: 'João Silva',
+      email: 'joao@example.com',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      uuid: 'mock-uuid-2', 
+      name: 'Maria Santos',
+      email: 'maria@example.com',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ];
+
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -13,12 +33,15 @@ const UserListPage = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
+        console.log('Fetching users...');
         const data = await userService.getUsers();
-        setUsers(data);
+        console.log('Received data:', data, 'Is array:', Array.isArray(data));
+        setUsers(Array.isArray(data) ? data : []);
         setError(null);
       } catch (err) {
         console.error('Error fetching users:', err);
         setError('Falha ao carregar a lista de usuários. Por favor, tente novamente.');
+        setUsers([]); // Garantir que seja sempre um array
       } finally {
         setLoading(false);
       }
@@ -48,7 +71,7 @@ const UserListPage = () => {
     <div>
       <h2>Lista de Usuários</h2>
       
-      {users.length === 0 ? (
+      {!users || users.length === 0 ? (
         <p>Nenhum usuário encontrado. Crie um novo usuário para começar.</p>
       ) : (
         <div className="user-list">

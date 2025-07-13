@@ -23,8 +23,8 @@ import { validate } from './config/configuration';
       inject: [ConfigService],
     }),
     PersistenceModule,
-    MessagingModule,
     ApplicationModule,
+    MessagingModule,
     PresentationModule,
   ],
 })

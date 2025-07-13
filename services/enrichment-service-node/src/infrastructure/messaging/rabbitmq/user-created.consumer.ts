@@ -1,14 +1,15 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { connect, Connection, Channel, ConsumeMessage } from 'amqplib';
+const amqp = require('amqplib');
+// import { connect, Connection, Channel, ConsumeMessage } from 'amqplib';
 import { IMessageHandler, UserCreatedEvent } from '../../../domain/ports/message-handler.interface';
 import { IEnrichmentService } from '../../../domain/ports/enrichment-service.interface';
 import { INJECTION_TOKENS } from '../../../domain/constants/injection-tokens';
 
 @Injectable()
 export class UserCreatedConsumer implements OnModuleInit, OnModuleDestroy {
-  private connection: Connection;
-  private channel: Channel;
+  private connection: any;
+  private channel: any;
 
   constructor(
     private readonly configService: ConfigService,
@@ -30,7 +31,7 @@ export class UserCreatedConsumer implements OnModuleInit, OnModuleDestroy {
     const uri = this.configService.get<string>('app.rabbitmq.uri');
     const queue = this.configService.get<string>('app.rabbitmq.queue');
 
-    this.connection = await connect(uri);
+    this.connection = await amqp.connect(uri);
     this.channel = await this.connection.createChannel();
 
     await this.channel.prefetch(1); // Processa uma mensagem por vez
@@ -46,7 +47,7 @@ export class UserCreatedConsumer implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async handleMessage(msg: ConsumeMessage | null) {
+  private async handleMessage(msg: any) {
     if (!msg) return;
 
     try {

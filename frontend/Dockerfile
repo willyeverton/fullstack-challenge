@@ -1,29 +1,24 @@
-# Build stage
-FROM node:18-alpine AS build
+FROM node:18-alpine
+
+# Install dependencies for DNS resolution
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy package files first for better caching
 COPY package*.json ./
-RUN npm ci
 
-# Copy source code
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy all files
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine AS production
-
-# Copy built assets from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 # Expose port
 EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"] 
+# Start application
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "80"]

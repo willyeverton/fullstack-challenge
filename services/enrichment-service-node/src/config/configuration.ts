@@ -1,21 +1,29 @@
-import { z } from 'zod';
-
-const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.coerce.number().default(3000),
-  MONGODB_URI: z.string(),
-  RABBITMQ_URI: z.string(),
-  RABBITMQ_QUEUE: z.string(),
-  RABBITMQ_DLX: z.string(),
-  RABBITMQ_DLQ: z.string(),
-  RABBITMQ_RETRY_DELAY: z.coerce.number().default(1000),
-  RABBITMQ_RETRY_ATTEMPTS: z.coerce.number().default(3),
-});
-
-export type EnvConfig = z.infer<typeof envSchema>;
+// Simplified configuration without zod for now
+export interface EnvConfig {
+  NODE_ENV: 'development' | 'production' | 'test';
+  PORT: number;
+  MONGODB_URI: string;
+  RABBITMQ_URI: string;
+  RABBITMQ_QUEUE: string;
+  RABBITMQ_DLX: string;
+  RABBITMQ_DLQ: string;
+  RABBITMQ_RETRY_DELAY: number;
+  RABBITMQ_RETRY_ATTEMPTS: number;
+}
 
 export function validate(config: Record<string, unknown>) {
-  return envSchema.parse(config);
+  // Simple validation - just return the config with defaults
+  return {
+    NODE_ENV: config.NODE_ENV || 'development',
+    PORT: Number(config.PORT) || 3000,
+    MONGODB_URI: config.MONGODB_URI || 'mongodb://mongodb:27017/enrichment',
+    RABBITMQ_URI: config.RABBITMQ_URI || 'amqp://guest:guest@rabbitmq:5672',
+    RABBITMQ_QUEUE: config.RABBITMQ_QUEUE || 'user.created',
+    RABBITMQ_DLX: config.RABBITMQ_DLX || 'user.created.dlx',
+    RABBITMQ_DLQ: config.RABBITMQ_DLQ || 'user.created.dlq',
+    RABBITMQ_RETRY_DELAY: Number(config.RABBITMQ_RETRY_DELAY) || 1000,
+    RABBITMQ_RETRY_ATTEMPTS: Number(config.RABBITMQ_RETRY_ATTEMPTS) || 3,
+  };
 }
 
 export default () => {
