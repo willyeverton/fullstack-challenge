@@ -7,6 +7,7 @@ import { ApplicationModule } from './application/application.module';
 import { PresentationModule } from './presentation/presentation.module';
 import configuration from './config/configuration';
 import { validate } from './config/configuration';
+import { UserCreatedConsumer } from './infrastructure/messaging/rabbitmq/user-created.consumer';
 
 @Module({
   imports: [
@@ -27,5 +28,6 @@ import { validate } from './config/configuration';
     MessagingModule,
     PresentationModule,
   ],
+  providers: [UserCreatedConsumer],
 })
-export class AppModule {}
+export class AppModule { }

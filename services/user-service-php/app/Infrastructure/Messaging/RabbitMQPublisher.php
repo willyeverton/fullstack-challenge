@@ -22,17 +22,26 @@ class RabbitMQPublisher implements EventPublisherInterface
 
     public function publishUserCreated(string $uuid, string $name): void
     {
-        $connection = $this->connection();
-        $channel = $connection->channel();
+        try {
+            error_log("Publishing user created event: UUID=$uuid, Name=$name");
 
-        $exchange = 'user.created';
-        $channel->exchange_declare($exchange, 'fanout', false, true, false);
+            $connection = $this->connection();
+            $channel = $connection->channel();
 
-        $payload = json_encode(['uuid' => $uuid, 'name' => $name]);
-        $message = new AMQPMessage($payload, ['content_type' => 'application/json']);
-        $channel->basic_publish($message, $exchange);
+            $queue = 'user.created';
+            $channel->queue_declare($queue, false, true, false, false);
 
-        $channel->close();
-        $connection->close();
+            $payload = json_encode(['uuid' => $uuid, 'name' => $name]);
+            $message = new AMQPMessage($payload, ['content_type' => 'application/json']);
+            $channel->basic_publish($message, '', $queue);
+
+            error_log("Message published successfully to queue: $queue");
+
+            $channel->close();
+            $connection->close();
+        } catch (\Exception $e) {
+            error_log("Error publishing message to RabbitMQ: " . $e->getMessage());
+            throw $e;
+        }
     }
-} 
+}

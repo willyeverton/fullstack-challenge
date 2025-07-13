@@ -12,8 +12,11 @@ import { ApplicationModule } from '../../application/application.module';
       provide: INJECTION_TOKENS.SERVICES.MESSAGE_HANDLER,
       useClass: RabbitMQService,
     },
-    UserCreatedConsumer,
+    {
+      provide: UserCreatedConsumer,
+      useClass: UserCreatedConsumer,
+    },
   ],
-  exports: [INJECTION_TOKENS.SERVICES.MESSAGE_HANDLER],
+  exports: [INJECTION_TOKENS.SERVICES.MESSAGE_HANDLER, UserCreatedConsumer],
 })
-export class MessagingModule {} 
+export class MessagingModule { }

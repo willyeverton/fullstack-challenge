@@ -9,7 +9,7 @@ export class EnrichmentService implements IEnrichmentService {
   constructor(
     @Inject(INJECTION_TOKENS.REPOSITORIES.ENRICHED_USER)
     private readonly enrichedUserRepository: IEnrichedUserRepository,
-  ) {}
+  ) { }
 
   async enrichUser(uuid: string, data: EnrichmentData): Promise<void> {
     // Simula enriquecimento de dados do usuário
@@ -27,21 +27,29 @@ export class EnrichmentService implements IEnrichmentService {
   }
 
   private async enrichUserData(data: EnrichmentData): Promise<Record<string, any>> {
-    // Aqui poderia integrar com serviços externos para enriquecer os dados
-    // Por exemplo: validação de email, geolocalização por IP, dados demográficos, etc.
-    
-    // Por enquanto, vamos simular alguns dados enriquecidos
+    // Normaliza o nome para username (minúsculo, sem acento, sem espaço)
+    const normalize = (str: string) =>
+      str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, '');
+    const username = normalize(data.name);
+
     const enrichmentData: Record<string, any> = {
+      linkedin: `linkedin.com/in/${username}`,
+      github: `github.com/${username}`,
       nameLength: data.name.length,
       timestamp: new Date().toISOString(),
     };
 
-    // Adiciona domínio do email apenas se for um email válido
-    const emailParts = data.email.split('@');
-    if (emailParts.length === 2) {
-      enrichmentData.emailDomain = emailParts[1];
+    if (data.email) {
+      const emailParts = data.email.split('@');
+      if (emailParts.length === 2) {
+        enrichmentData.emailDomain = emailParts[1];
+      }
     }
 
     return enrichmentData;
   }
-} 
+}

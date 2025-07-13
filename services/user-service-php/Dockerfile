@@ -34,3 +34,6 @@ EXPOSE 8000
 
 # Start PHP built-in server
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+
+RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/error-logging.ini && \
+    echo "error_log = /var/log/php_errors.log" >> /usr/local/etc/php/conf.d/error-logging.ini
