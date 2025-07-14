@@ -18,3 +18,22 @@ test-final-system.sh
 /tmp/test_user_uuid.txt
 /tmp/final_test_uuid.txt
 
+# Test results and reports
+tests/integration/results/
+*.html
+
+# Docker build artifacts
+**/Dockerfile-
+**/dist/
+**/build/
+
+# IDE and editor files
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+
+services/user-service-php/storage/logs/
+
