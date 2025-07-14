@@ -5,7 +5,8 @@ import { cacheService } from '../utils/cache';
 
 // Criamos uma instância separada do Axios para o serviço de enriquecimento
 const enrichmentApi = axios.create({
-  baseURL: import.meta.env.VITE_ENRICHMENT_API_URL || '/enrichment',
+  // Utiliza a variável de ambiente corretamente para o Vite
+  baseURL: (import.meta as any).env?.VITE_ENRICHMENT_API_URL || '/enrichment',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,18 +33,18 @@ export const enrichmentService = {
       // Verifica se há dados em cache
       const cacheKey = `enriched_${uuid}`;
       const cachedData = cacheService.get<EnrichedUserData>(cacheKey);
-      
+
       if (cachedData) {
-        return cachedData;
+        return mapEnrichmentResponse(cachedData);
       }
-      
+
       // Se não há cache, busca da API
       const response = await enrichmentApi.get<EnrichedUserData>(`users/enriched/${uuid}`);
-      
+
       // Armazena no cache
       cacheService.set(cacheKey, response.data, CACHE_TTL);
-      
-      return response.data;
+
+      return mapEnrichmentResponse(response.data);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         // Dados ainda não processados ou usuário não encontrado
@@ -54,7 +55,7 @@ export const enrichmentService = {
       throw handleApiError(error);
     }
   },
-  
+
   /**
    * Força uma atualização dos dados enriquecidos, ignorando o cache
    */
@@ -63,14 +64,14 @@ export const enrichmentService = {
       // Remove dados do cache, se existirem
       const cacheKey = `enriched_${uuid}`;
       cacheService.delete(cacheKey);
-      
+
       // Busca dados atualizados
       const response = await enrichmentApi.get<EnrichedUserData>(`users/enriched/${uuid}`);
-      
+
       // Armazena no cache
       cacheService.set(cacheKey, response.data, CACHE_TTL);
-      
-      return response.data;
+
+      return mapEnrichmentResponse(response.data);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         const apiError = handleApiError(error);
@@ -82,4 +83,18 @@ export const enrichmentService = {
   }
 };
 
-export default enrichmentService; 
+// Função utilitária para mapear o formato do backend para o frontend
+function mapEnrichmentResponse(data: any): EnrichedUserData {
+  if (data.enrichmentData) {
+    return {
+      linkedin: data.enrichmentData.linkedin,
+      github: data.enrichmentData.github
+    };
+  }
+  return {
+    linkedin: data.linkedin,
+    github: data.github
+  };
+}
+
+export default enrichmentService;
