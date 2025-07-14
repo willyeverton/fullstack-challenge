@@ -23,7 +23,7 @@ describe('User Enrichment Flow Integration Tests', () => {
     await mongoClient.connect();
 
     // Conectar ao RabbitMQ
-    connection = await amqp.connect(RABBITMQ_URI);
+    connection = await amqp.connect(RABBITMQ_URI) as amqp.Connection;
     channel = await connection.createChannel();
     await channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
   });
@@ -79,7 +79,7 @@ describe('User Enrichment Flow Integration Tests', () => {
     const db = mongoClient.db('enrichment_test');
     const collection = db.collection('enriched_users');
     const storedData = await collection.findOne({ uuid: userUuid });
-    
+
     expect(storedData).toBeDefined();
     expect(storedData?.uuid).toBe(userUuid);
     expect(storedData?.linkedin).toBe(enrichedData.linkedin);
@@ -121,7 +121,7 @@ describe('User Enrichment Flow Integration Tests', () => {
 
   it('should return 404 for non-existent user', async () => {
     const nonExistentUuid = '00000000-0000-0000-0000-000000000000';
-    
+
     try {
       await axios.get(`${USER_SERVICE_URL}/users/${nonExistentUuid}`);
       fail('Should have thrown an error for non-existent user');
@@ -136,4 +136,4 @@ describe('User Enrichment Flow Integration Tests', () => {
       expect(error.response.status).toBe(404);
     }
   });
-}); 
+});

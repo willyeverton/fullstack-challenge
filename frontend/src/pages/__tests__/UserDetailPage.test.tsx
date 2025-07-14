@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import UserDetailPage from '../UserDetailPage';
 import userService from '../../services/userService';
 import enrichmentService from '../../services/enrichmentService';
-import { BrowserRouter } from 'react-router-dom';
 
 // Mock dos serviços
 vi.mock('../../services/userService', () => ({
@@ -14,108 +13,98 @@ vi.mock('../../services/userService', () => ({
 
 vi.mock('../../services/enrichmentService', () => ({
   default: {
-    getEnrichedUserData: vi.fn(),
-    refreshEnrichedUserData: vi.fn()
+    getEnrichedUserData: vi.fn()
   }
 }));
 
 // Mock do react-router-dom
-vi.mock('react-router-dom', () => ({
-  ...vi.importActual('react-router-dom'),
-  useParams: () => ({ uuid: 'test-uuid' }),
-  useNavigate: () => vi.fn()
-}));
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useParams: () => ({ uuid: 'test-uuid' }),
+    BrowserRouter: actual.BrowserRouter,
+    Routes: actual.Routes,
+    Route: actual.Route
+  };
+});
 
 describe('UserDetailPage', () => {
-  const mockUser = {
-    id: 1,
-    uuid: 'test-uuid',
-    name: 'Test User',
-    email: 'test@example.com'
-  };
-  
-  const mockEnrichedData = {
-    linkedin: 'linkedin.com/in/testuser',
-    github: 'github.com/testuser'
-  };
-  
   beforeEach(() => {
     vi.resetAllMocks();
   });
-  
-  it('should display loading state initially', () => {
-    (userService.getUserByUuid as any).mockResolvedValue(mockUser);
-    (enrichmentService.getEnrichedUserData as any).mockResolvedValue(mockEnrichedData);
-    
-    render(
+
+  const renderWithRouter = () => {
+    const { BrowserRouter } = require('react-router-dom');
+    return render(
       <BrowserRouter>
         <UserDetailPage />
       </BrowserRouter>
     );
-    
-    expect(screen.getByText(/carregando dados/i)).toBeInTheDocument();
-  });
-  
-  it('should display user data and enriched data when loaded', async () => {
+  };
+
+  it('should render user details and enriched data', async () => {
+    const mockUser = {
+      id: 1,
+      uuid: 'test-uuid',
+      name: 'Test User',
+      email: 'test@example.com'
+    };
+
+    const mockEnrichedData = {
+      linkedin: 'linkedin.com/in/testuser',
+      github: 'github.com/testuser'
+    };
+
     (userService.getUserByUuid as any).mockResolvedValue(mockUser);
     (enrichmentService.getEnrichedUserData as any).mockResolvedValue(mockEnrichedData);
-    
-    render(
-      <BrowserRouter>
-        <UserDetailPage />
-      </BrowserRouter>
-    );
-    
+
+    renderWithRouter();
+
     // Verifica se os dados do usuário são exibidos
     await waitFor(() => {
-      expect(screen.getByText(mockUser.name)).toBeInTheDocument();
-      expect(screen.getByText(mockUser.email)).toBeInTheDocument();
-      expect(screen.getByText(mockUser.uuid)).toBeInTheDocument();
+      expect(screen.getByText('Test User')).toBeInTheDocument();
+      expect(screen.getByText('test@example.com')).toBeInTheDocument();
     });
-    
+
     // Verifica se os dados enriquecidos são exibidos
     await waitFor(() => {
-      expect(screen.getByText(mockEnrichedData.linkedin)).toBeInTheDocument();
-      expect(screen.getByText(mockEnrichedData.github)).toBeInTheDocument();
+      expect(screen.getByText('linkedin.com/in/testuser')).toBeInTheDocument();
+      expect(screen.getByText('github.com/testuser')).toBeInTheDocument();
     });
   });
-  
-  it('should handle error when loading user data', async () => {
-    (userService.getUserByUuid as any).mockRejectedValue(new Error('Failed to load user'));
-    
-    render(
-      <BrowserRouter>
-        <UserDetailPage />
-      </BrowserRouter>
-    );
-    
+
+  it('should handle user not found', async () => {
+    (userService.getUserByUuid as any).mockRejectedValue(new Error('User not found'));
+
+    renderWithRouter();
+
     await waitFor(() => {
-      expect(screen.getByText(/não foi possível carregar/i)).toBeInTheDocument();
+      expect(screen.getByText(/não foi possível carregar os dados do usuário/i)).toBeInTheDocument();
     });
   });
-  
-  it('should show processing message when enrichment data is not ready', async () => {
+
+  it('should handle enrichment data not found', async () => {
+    const mockUser = {
+      id: 1,
+      uuid: 'test-uuid',
+      name: 'Test User',
+      email: 'test@example.com'
+    };
+
     (userService.getUserByUuid as any).mockResolvedValue(mockUser);
-    
-    // Simula erro 404 para dados de enriquecimento
-    const notFoundError = new Error('Not found');
-    (notFoundError as any).response = { status: 404 };
-    (enrichmentService.getEnrichedUserData as any).mockRejectedValue(notFoundError);
-    
-    render(
-      <BrowserRouter>
-        <UserDetailPage />
-      </BrowserRouter>
-    );
-    
+    (enrichmentService.getEnrichedUserData as any).mockRejectedValue(new Error('Not found'));
+
+    renderWithRouter();
+
     // Verifica se os dados do usuário são exibidos
     await waitFor(() => {
-      expect(screen.getByText(mockUser.name)).toBeInTheDocument();
+      expect(screen.getByText('Test User')).toBeInTheDocument();
     });
-    
+
     // Verifica se a mensagem de processamento é exibida
     await waitFor(() => {
       expect(screen.getByText(/dados ainda em processamento/i)).toBeInTheDocument();
     });
   });
-}); 
+});

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CircuitBreaker } from 'opossum';
+const CircuitBreaker = require('opossum');
 
 export interface CircuitBreakerOptions {
   timeout?: number;
@@ -12,12 +12,12 @@ export interface CircuitBreakerOptions {
 @Injectable()
 export class CircuitBreakerService {
   private readonly logger = new Logger(CircuitBreakerService.name);
-  private circuitBreakers = new Map<string, CircuitBreaker>();
+  private circuitBreakers = new Map<string, any>();
 
   createCircuitBreaker<T>(
     operation: (...args: any[]) => Promise<T>,
     options: CircuitBreakerOptions = {}
-  ): CircuitBreaker {
+  ): any {
     const {
       timeout = 3000,
       errorThresholdPercentage = 50,
@@ -67,11 +67,11 @@ export class CircuitBreakerService {
     return circuitBreaker;
   }
 
-  getCircuitBreaker(name: string): CircuitBreaker | undefined {
+  getCircuitBreaker(name: string): any | undefined {
     return this.circuitBreakers.get(name);
   }
 
-  getAllCircuitBreakers(): Map<string, CircuitBreaker> {
+  getAllCircuitBreakers(): Map<string, any> {
     return this.circuitBreakers;
   }
 

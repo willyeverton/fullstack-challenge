@@ -80,6 +80,7 @@ export class UserCreatedConsumer implements OnModuleInit, OnModuleDestroy {
         // Enrich user data
         await this.enrichmentService.enrichUser(data.uuid, {
           name: data.name,
+          email: data.email,
         });
 
         // Acknowledge successful processing

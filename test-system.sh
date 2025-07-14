@@ -1,132 +1,284 @@
 #!/bin/bash
 
-# 🏭 PRODUCTION-READY SYSTEM TEST
-# Testa todas as funcionalidades do sistema microservices
+# Test System Script - Fullstack Microservices Challenge
+# Este script testa todo o fluxo do sistema: criação, listagem e enriquecimento
 
 set -e
 
-echo "🏭 PRODUCTION-READY SYSTEM TEST"
-echo "================================"
-echo ""
+echo "🧪 Iniciando testes do sistema..."
+echo "=================================="
 
-# Colors for output
+# Cores para output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Test functions
-test_service_health() {
-    local service_name=$1
-    local url=$2
-    local expected_status=$3
+# Função para log colorido
+log_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
 
-    echo -n "Testing $service_name health... "
+log_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
 
-    if curl -f -s "$url" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ PASS${NC}"
-        return 0
+log_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+log_info() {
+    echo -e "ℹ️  $1"
+}
+
+# Verificar se os serviços estão rodando
+check_services() {
+    log_info "Verificando se os serviços estão rodando..."
+
+    # Verificar User Service
+    if curl -f -s http://localhost:8080/health > /dev/null; then
+        log_success "User Service está rodando"
     else
-        echo -e "${RED}❌ FAIL${NC}"
-        return 1
+        log_error "User Service não está respondendo"
+        exit 1
+    fi
+
+    # Verificar Enrichment Service
+    if curl -f -s http://localhost:3000/health > /dev/null; then
+        log_success "Enrichment Service está rodando"
+    else
+        log_error "Enrichment Service não está respondendo"
+        exit 1
+    fi
+
+    # Verificar Frontend
+    if curl -f -s http://localhost:8000 > /dev/null; then
+        log_success "Frontend está rodando"
+    else
+        log_error "Frontend não está respondendo"
+        exit 1
     fi
 }
 
-test_api_endpoint() {
-    local endpoint_name=$1
-    local method=$2
-    local url=$3
-    local data=$4
-    local expected_status=$5
+# Teste 1: Criar usuário
+test_create_user() {
+    log_info "Teste 1: Criando usuário..."
 
-    echo -n "Testing $endpoint_name... "
+    local response=$(curl -s -X POST http://localhost:8080/api/users \
+        -H "Content-Type: application/json" \
+        -d '{"name":"João Silva","email":"joao@example.com"}' \
+        -w "\n%{http_code}")
 
-    local response
-    if [ "$method" = "POST" ] && [ -n "$data" ]; then
-        response=$(curl -s -w "%{http_code}" -X POST "$url" \
-            -H "Content-Type: application/json" \
-            -d "$data")
+    local http_code=$(echo "$response" | tail -n1)
+    local body=$(echo "$response" | head -n -1)
+
+    if [ "$http_code" = "201" ]; then
+        log_success "Usuário criado com sucesso"
+        echo "$body" | jq '.'
+
+        # Extrair UUID para testes posteriores
+        export USER_UUID=$(echo "$body" | jq -r '.uuid')
+        log_info "UUID do usuário: $USER_UUID"
     else
-        response=$(curl -s -w "%{http_code}" -X GET "$url")
-    fi
-
-    local http_code="${response: -3}"
-    local body="${response%???}"
-
-    if [ "$http_code" = "$expected_status" ]; then
-        echo -e "${GREEN}✅ PASS (HTTP $http_code)${NC}"
-        return 0
-    else
-        echo -e "${RED}❌ FAIL (HTTP $http_code)${NC}"
-        return 1
+        log_error "Falha ao criar usuário. HTTP Code: $http_code"
+        echo "$body"
+        exit 1
     fi
 }
 
-# Main test execution
+# Teste 2: Listar usuários
+test_list_users() {
+    log_info "Teste 2: Listando usuários..."
+
+    local response=$(curl -s http://localhost:8080/api/users \
+        -w "\n%{http_code}")
+
+    local http_code=$(echo "$response" | tail -n1)
+    local body=$(echo "$response" | head -n -1)
+
+    if [ "$http_code" = "200" ]; then
+        log_success "Lista de usuários obtida com sucesso"
+        local user_count=$(echo "$body" | jq 'length')
+        log_info "Total de usuários: $user_count"
+        echo "$body" | jq '.'
+    else
+        log_error "Falha ao listar usuários. HTTP Code: $http_code"
+        echo "$body"
+        exit 1
+    fi
+}
+
+# Teste 3: Buscar usuário específico
+test_get_user() {
+    log_info "Teste 3: Buscando usuário específico..."
+
+    if [ -z "$USER_UUID" ]; then
+        log_error "UUID do usuário não disponível"
+        exit 1
+    fi
+
+    local response=$(curl -s http://localhost:8080/api/users/$USER_UUID \
+        -w "\n%{http_code}")
+
+    local http_code=$(echo "$response" | tail -n1)
+    local body=$(echo "$response" | head -n -1)
+
+    if [ "$http_code" = "200" ]; then
+        log_success "Usuário encontrado com sucesso"
+        echo "$body" | jq '.'
+    else
+        log_error "Falha ao buscar usuário. HTTP Code: $http_code"
+        echo "$body"
+        exit 1
+    fi
+}
+
+# Teste 4: Verificar enriquecimento (com retry)
+test_enrichment() {
+    log_info "Teste 4: Verificando enriquecimento de dados..."
+
+    if [ -z "$USER_UUID" ]; then
+        log_error "UUID do usuário não disponível"
+        exit 1
+    fi
+
+    local max_attempts=10
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        log_info "Tentativa $attempt de $max_attempts..."
+
+        local response=$(curl -s http://localhost:3000/users/enriched/$USER_UUID \
+            -w "\n%{http_code}")
+
+        local http_code=$(echo "$response" | tail -n1)
+        local body=$(echo "$response" | head -n -1)
+
+        if [ "$http_code" = "200" ]; then
+            log_success "Dados enriquecidos obtidos com sucesso!"
+            echo "$body" | jq '.'
+            return 0
+        elif [ "$http_code" = "404" ]; then
+            log_warning "Dados ainda em processamento... (tentativa $attempt)"
+            if [ $attempt -lt $max_attempts ]; then
+                sleep 3
+            fi
+        else
+            log_error "Erro inesperado. HTTP Code: $http_code"
+            echo "$body"
+            exit 1
+        fi
+
+        attempt=$((attempt + 1))
+    done
+
+    log_error "Timeout: Dados enriquecidos não ficaram disponíveis após $max_attempts tentativas"
+    exit 1
+}
+
+# Teste 5: Validações de entrada
+test_validations() {
+    log_info "Teste 5: Testando validações de entrada..."
+
+    # Teste: Nome muito curto
+    local response=$(curl -s -X POST http://localhost:8080/api/users \
+        -H "Content-Type: application/json" \
+        -d '{"name":"Jo","email":"joao@example.com"}' \
+        -w "\n%{http_code}")
+
+    local http_code=$(echo "$response" | tail -n1)
+
+    if [ "$http_code" = "400" ]; then
+        log_success "Validação de nome curto funcionando"
+    else
+        log_error "Validação de nome curto falhou. HTTP Code: $http_code"
+    fi
+
+    # Teste: Email inválido
+    response=$(curl -s -X POST http://localhost:8080/api/users \
+        -H "Content-Type: application/json" \
+        -d '{"name":"João Silva","email":"email-invalido"}' \
+        -w "\n%{http_code}")
+
+    http_code=$(echo "$response" | tail -n1)
+
+    if [ "$http_code" = "400" ]; then
+        log_success "Validação de email inválido funcionando"
+    else
+        log_error "Validação de email inválido falhou. HTTP Code: $http_code"
+    fi
+}
+
+# Teste 6: Health checks
+test_health_checks() {
+    log_info "Teste 6: Verificando health checks..."
+
+    # User Service Health
+    local response=$(curl -s http://localhost:8080/health \
+        -w "\n%{http_code}")
+
+    local http_code=$(echo "$response" | tail -n1)
+
+    if [ "$http_code" = "200" ]; then
+        log_success "User Service health check OK"
+    else
+        log_error "User Service health check falhou. HTTP Code: $http_code"
+    fi
+
+    # Enrichment Service Health
+    response=$(curl -s http://localhost:3000/health \
+        -w "\n%{http_code}")
+
+    http_code=$(echo "$response" | tail -n1)
+
+    if [ "$http_code" = "200" ]; then
+        log_success "Enrichment Service health check OK"
+    else
+        log_error "Enrichment Service health check falhou. HTTP Code: $http_code"
+    fi
+}
+
+# Executar todos os testes
 main() {
-    echo "🔍 Checking service health..."
-    echo "----------------------------"
-
-    # Test health endpoints
-    test_service_health "Frontend" "http://localhost:8000" "200"
-    test_service_health "User Service" "http://localhost:8080/health" "200"
-    test_service_health "Enrichment Service" "http://localhost:3000/health" "200"
-
+    log_info "Iniciando testes do sistema Fullstack Microservices Challenge"
     echo ""
-    echo "🧪 Testing API endpoints..."
-    echo "---------------------------"
 
-    # Test User Service endpoints
-    test_api_endpoint "List Users" "GET" "http://localhost:8080/api/users" "" "200"
-
-    # Test user creation
-    local test_user='{"name":"Test User","email":"test@example.com"}'
-    test_api_endpoint "Create User" "POST" "http://localhost:8080/api/users" "$test_user" "201"
-
-    # Get the created user's UUID for enrichment test
-    local user_response=$(curl -s http://localhost:8080/api/users | jq -r '.[-1].uuid' 2>/dev/null)
-    if [ -n "$user_response" ] && [ "$user_response" != "null" ]; then
-        echo -e "${BLUE}📋 Created user UUID: $user_response${NC}"
-
-        # Wait for enrichment processing
-        echo -n "⏳ Waiting for enrichment processing... "
-        sleep 3
-
-        # Test enrichment endpoint
-        test_api_endpoint "User Enrichment" "GET" "http://localhost:3000/users/enriched/$user_response" "" "200"
-    fi
-
+    check_services
     echo ""
-    echo "🔧 Testing resilience features..."
-    echo "--------------------------------"
 
-    # Test circuit breaker stats
-    local cb_stats=$(curl -s http://localhost:3000/health/circuit-breakers 2>/dev/null)
-    if [ -n "$cb_stats" ]; then
-        echo -e "${GREEN}✅ Circuit Breaker stats available${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Circuit Breaker stats not available${NC}"
-    fi
+    test_create_user
+    echo ""
 
-    # Test retry mechanism by checking logs
-    echo -e "${BLUE}📊 Checking system logs for retry patterns...${NC}"
+    test_list_users
+    echo ""
 
+    test_get_user
     echo ""
-    echo "🎯 SYSTEM STATUS SUMMARY"
-    echo "========================"
-    echo -e "${GREEN}✅ All core services are running${NC}"
-    echo -e "${GREEN}✅ API endpoints are responding${NC}"
-    echo -e "${GREEN}✅ User creation and enrichment working${NC}"
-    echo -e "${GREEN}✅ Resilience features implemented${NC}"
+
+    test_enrichment
     echo ""
-    echo -e "${BLUE}🌐 Frontend: http://localhost:8000${NC}"
-    echo -e "${BLUE}🔧 User Service API: http://localhost:8080/api/users${NC}"
-    echo -e "${BLUE}🔧 Enrichment Service API: http://localhost:3000/users/enriched/{uuid}${NC}"
-    echo -e "${BLUE}📊 Health Checks: http://localhost:8080/health, http://localhost:3000/health${NC}"
+
+    test_validations
     echo ""
-    echo -e "${GREEN}🎉 System is production-ready!${NC}"
+
+    test_health_checks
+    echo ""
+
+    log_success "🎉 Todos os testes passaram com sucesso!"
+    log_info "Sistema funcionando corretamente"
+    echo ""
+    log_info "URLs dos serviços:"
+    log_info "- Frontend: http://localhost:8000"
+    log_info "- User Service API: http://localhost:8080/api/users"
+    log_info "- Enrichment Service API: http://localhost:3000/users/enriched/{uuid}"
+    log_info "- RabbitMQ Management: http://localhost:15672 (guest/guest)"
 }
 
-# Run tests
+# Verificar se jq está instalado
+if ! command -v jq &> /dev/null; then
+    log_error "jq não está instalado. Instale com: sudo apt-get install jq"
+    exit 1
+fi
+
+# Executar testes
 main "$@"

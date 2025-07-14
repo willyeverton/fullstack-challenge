@@ -15,44 +15,22 @@ export const userService = {
       // Verifica se há dados em cache
       const cacheKey = 'users_list';
       const cachedData = cacheService.get<User[]>(cacheKey);
-      
+
       if (cachedData) {
         return cachedData;
       }
-      
+
       // Se não há cache, busca da API
       const response = await api.get<User[]>(USER_ENDPOINT);
-      
+
       // Armazena no cache
       cacheService.set(cacheKey, response.data, CACHE_TTL);
-      
+
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
-      console.error('Error fetching users, returning mock data:', apiError);
-      
-      // Retorna dados mock quando a API não está disponível
-      const mockUsers: User[] = [
-        {
-          id: 1,
-          uuid: 'mock-uuid-1',
-          name: 'João Silva',
-          email: 'joao@example.com',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          uuid: 'mock-uuid-2', 
-          name: 'Maria Santos',
-          email: 'maria@example.com',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-      
-      console.log('Returning mock users:', mockUsers);
-      return mockUsers;
+      console.error('Error fetching users:', apiError);
+      throw apiError;
     }
   },
 
@@ -64,17 +42,17 @@ export const userService = {
       // Verifica se há dados em cache
       const cacheKey = `user_${uuid}`;
       const cachedData = cacheService.get<User>(cacheKey);
-      
+
       if (cachedData) {
         return cachedData;
       }
-      
+
       // Se não há cache, busca da API
       const response = await api.get<User>(`${USER_ENDPOINT}/${uuid}`);
-      
+
       // Armazena no cache
       cacheService.set(cacheKey, response.data, CACHE_TTL);
-      
+
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
@@ -89,10 +67,10 @@ export const userService = {
   createUser: async (userData: CreateUserRequest): Promise<CreateUserResponse> => {
     try {
       const response = await api.post<CreateUserResponse>(USER_ENDPOINT, userData);
-      
+
       // Invalida o cache de lista de usuários
       cacheService.delete('users_list');
-      
+
       return response.data;
     } catch (error) {
       const apiError = handleApiError(error);
@@ -102,4 +80,4 @@ export const userService = {
   }
 };
 
-export default userService; 
+export default userService;

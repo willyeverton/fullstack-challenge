@@ -20,10 +20,10 @@ class RabbitMQPublisher implements EventPublisherInterface
         );
     }
 
-    public function publishUserCreated(string $uuid, string $name): void
+    public function publishUserCreated(string $uuid, string $name, string $email): void
     {
         try {
-            error_log("Publishing user created event: UUID=$uuid, Name=$name");
+            error_log("Publishing user created event: UUID=$uuid, Name=$name, Email=$email");
 
             $connection = $this->connection();
             $channel = $connection->channel();
@@ -31,7 +31,12 @@ class RabbitMQPublisher implements EventPublisherInterface
             $queue = 'user.created';
             $channel->queue_declare($queue, false, true, false, false);
 
-            $payload = json_encode(['uuid' => $uuid, 'name' => $name]);
+            $payload = json_encode([
+                'uuid' => $uuid,
+                'name' => $name,
+                'email' => $email,
+                'timestamp' => date('c')
+            ]);
             $message = new AMQPMessage($payload, ['content_type' => 'application/json']);
             $channel->basic_publish($message, '', $queue);
 

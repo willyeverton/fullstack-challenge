@@ -10,6 +10,7 @@
   "dependencies": {
     "amqplib": "^0.10.3",
     "axios": "^1.6.0",
+    "jest-html-reporter": "^4.3.0",
     "mongodb": "^5.0.0"
   },
   "devDependencies": {
@@ -28,10 +29,13 @@
     ],
     "reporters": [
       "default",
-      ["./node_modules/jest-html-reporter", {
-        "pageTitle": "Integration Test Report",
-        "outputPath": "./results/test-report.html"
-      }]
+      [
+        "./node_modules/jest-html-reporter",
+        {
+          "pageTitle": "Integration Test Report",
+          "outputPath": "./results/test-report.html"
+        }
+      ]
     ]
   }
-} 
+}

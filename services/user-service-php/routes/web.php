@@ -6,7 +6,7 @@
 $router->get('health', function () {
     return response()->json([
         'status' => 'ok',
-        'timestamp' => now()->toISOString(),
+        'timestamp' => date('c'),
         'service' => 'user-service',
         'version' => '1.0.0'
     ]);

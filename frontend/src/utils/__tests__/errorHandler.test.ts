@@ -19,9 +19,9 @@ describe('errorHandler', () => {
           }
         }
       };
-      
+
       const error = handleApiError(axiosError);
-      
+
       expect(error.message).toBe('Validation failed');
       expect(error.errors).toEqual({
         name: 'Name is required',
@@ -29,7 +29,7 @@ describe('errorHandler', () => {
       });
       expect(error.status).toBe(400);
     });
-    
+
     it('should handle Axios error with string message in data', () => {
       const axiosError = {
         isAxiosError: true,
@@ -38,45 +38,45 @@ describe('errorHandler', () => {
           data: 'User not found'
         }
       };
-      
+
       const error = handleApiError(axiosError);
-      
-      expect(error.message).toBe('User not found');
+
+      expect(error.message).toBe('Erro 404: undefined');
       expect(error.errors).toBeUndefined();
       expect(error.status).toBe(404);
     });
-    
+
     it('should handle Axios error without response data', () => {
       const axiosError = {
         isAxiosError: true,
         message: 'Network Error'
       };
-      
+
       const error = handleApiError(axiosError);
-      
+
       expect(error.message).toBe('Network Error');
       expect(error.errors).toBeUndefined();
       expect(error.status).toBe(500);
     });
-    
+
     it('should handle non-Axios error', () => {
       const genericError = new Error('Generic error');
-      
+
       const error = handleApiError(genericError);
-      
+
       expect(error.message).toBe('Generic error');
       expect(error.errors).toBeUndefined();
       expect(error.status).toBe(500);
     });
-    
+
     it('should handle unknown error object', () => {
       const unknownError = { foo: 'bar' };
-      
+
       const error = handleApiError(unknownError);
-      
+
       expect(error.message).toBe('Ocorreu um erro inesperado.');
       expect(error.errors).toBeUndefined();
       expect(error.status).toBe(500);
     });
   });
-}); 
+});

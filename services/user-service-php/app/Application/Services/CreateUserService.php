@@ -46,7 +46,11 @@ class CreateUserService
         error_log("User saved successfully, publishing event for UUID: " . $createdUser->getUuid());
 
         try {
-            $this->eventPublisher->publishUserCreated($createdUser->getUuid(), $createdUser->getName());
+            $this->eventPublisher->publishUserCreated(
+                $createdUser->getUuid(),
+                $createdUser->getName(),
+                $createdUser->getEmail()
+            );
             error_log("Event published successfully");
         } catch (\Exception $e) {
             error_log("Error publishing event: " . $e->getMessage());

@@ -15,4 +15,4 @@ COPY wait-for-services.sh /usr/local/bin/wait-for-services.sh
 RUN chmod +x /usr/local/bin/wait-for-services.sh
 
 # Run tests
-CMD ["/usr/local/bin/wait-for-services.sh", "npm", "test"] 
+CMD ["/usr/local/bin/wait-for-services.sh", "npm", "test"]

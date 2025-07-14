@@ -32,8 +32,8 @@ RUN chown -R www-data:www-data /var/www
 # Expose port
 EXPOSE 8000
 
-# Start PHP built-in server
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
+# Entrypoint para rodar migrations e iniciar o servidor
+ENTRYPOINT ["./entrypoint.sh"]
 
 RUN echo "log_errors = On" >> /usr/local/etc/php/conf.d/error-logging.ini && \
     echo "error_log = /var/log/php_errors.log" >> /usr/local/etc/php/conf.d/error-logging.ini

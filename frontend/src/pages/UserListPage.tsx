@@ -4,27 +4,7 @@ import userService from '../services/userService';
 import type { User } from '../types/user';
 
 const UserListPage = () => {
-  // Inicializar com dados mock para garantir que funcione
-  const mockUsers: User[] = [
-    {
-      id: 1,
-      uuid: 'mock-uuid-1',
-      name: 'João Silva',
-      email: 'joao@example.com',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      uuid: 'mock-uuid-2', 
-      name: 'Maria Santos',
-      email: 'maria@example.com',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -70,14 +50,14 @@ const UserListPage = () => {
   return (
     <div>
       <h2>Lista de Usuários</h2>
-      
+
       {!users || users.length === 0 ? (
         <p>Nenhum usuário encontrado. Crie um novo usuário para começar.</p>
       ) : (
         <div className="user-list">
           {users.map((user) => (
-            <div 
-              key={user.id} 
+            <div
+              key={user.id}
               className="card user-card"
               onClick={() => handleUserClick(user.uuid)}
             >
@@ -92,4 +72,4 @@ const UserListPage = () => {
   );
 };
 
-export default UserListPage; 
+export default UserListPage;

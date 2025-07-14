@@ -16,6 +16,7 @@ class EloquentUserRepository implements UserRepositoryInterface
 
     public function save(User $user): User
     {
+        return \DB::transaction(function () use ($user) {
         $model = $this->model->newInstance();
         $model->uuid = $user->getUuid();
         $model->name = $user->getName();
@@ -28,6 +29,7 @@ class EloquentUserRepository implements UserRepositoryInterface
             $model->email,
             $model->uuid
         );
+        });
     }
 
     public function findAll(): array
@@ -67,4 +69,4 @@ class EloquentUserRepository implements UserRepositoryInterface
             $model->uuid
         );
     }
-} 
+}

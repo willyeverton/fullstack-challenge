@@ -19,7 +19,7 @@ export class HealthController {
 
   @Get('detailed')
   detailedCheck() {
-    const circuitBreakerStats = this.circuitBreakerService.getAllStats();
+    const circuitBreakerStats = this.circuitBreakerService.getAllCircuitBreakerStats();
 
     return {
       status: 'ok',

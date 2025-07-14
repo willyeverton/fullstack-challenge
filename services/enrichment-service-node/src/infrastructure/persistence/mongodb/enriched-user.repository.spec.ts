@@ -23,21 +23,26 @@ describe('MongoEnrichedUserRepository', () => {
     }),
   };
 
+  // Função construtora mockada para simular o new Model()
+  const mockModelConstructor = jest.fn().mockImplementation(() => mockModelInstance);
+  const mockModelInstance = {
+    save: jest.fn().mockResolvedValue({ ...mockUser, toJSON: () => mockUser }),
+  };
+
   beforeEach(async () => {
+    mockModelConstructor.mockClear();
+    mockModelInstance.save.mockClear();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MongoEnrichedUserRepository,
         {
           provide: getModelToken(EnrichedUser.name),
-          useValue: {
+          useValue: Object.assign(mockModelConstructor, {
             findOne: jest.fn(),
             find: jest.fn(),
-            save: jest.fn(),
             findOneAndUpdate: jest.fn(),
-            prototype: {
-              save: jest.fn(),
-            },
-          },
+          }),
         },
       ],
     }).compile();
@@ -55,6 +60,10 @@ describe('MongoEnrichedUserRepository', () => {
       const result = await repository.findByUuid('test-uuid');
       expect(result).toBeDefined();
       expect(result?.uuid).toBe(mockUser.uuid);
+      expect(result?.name).toBe(mockUser.name);
+      expect(result?.email).toBe(mockUser.email);
+      expect(result?.status).toBe(mockUser.status);
+      expect(result?.retryCount).toBe(mockUser.retryCount);
     });
 
     it('should return null when user not found', async () => {
@@ -69,13 +78,15 @@ describe('MongoEnrichedUserRepository', () => {
 
   describe('save', () => {
     it('should save and return a new user', async () => {
-      const saveSpy = jest.spyOn(model.prototype, 'save')
-        .mockResolvedValue({ ...mockUser, toJSON: () => mockUser });
-
       const result = await repository.save(new EnrichedUser(mockUser));
       expect(result).toBeDefined();
       expect(result.uuid).toBe(mockUser.uuid);
-      expect(saveSpy).toHaveBeenCalled();
+      expect(result.name).toBe(mockUser.name);
+      expect(result.email).toBe(mockUser.email);
+      expect(result.status).toBe(mockUser.status);
+      expect(result.retryCount).toBe(mockUser.retryCount);
+      expect(mockModelConstructor).toHaveBeenCalled();
+      expect(mockModelInstance.save).toHaveBeenCalled();
     });
   });
 
@@ -90,4 +101,4 @@ describe('MongoEnrichedUserRepository', () => {
       expect(result[0].status).toBe('pending');
     });
   });
-}); 
+});

@@ -24,12 +24,12 @@ class CreateUserServiceTest extends MockeryTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->userRepository = Mockery::mock(UserRepositoryInterface::class);
         $this->eventPublisher = Mockery::mock(EventPublisherInterface::class);
         $this->validatorFactory = Mockery::mock(ValidationFactory::class);
         $this->validator = Mockery::mock(Validator::class);
-        
+
         $this->service = new CreateUserService(
             $this->userRepository,
             $this->eventPublisher,
@@ -41,7 +41,7 @@ class CreateUserServiceTest extends MockeryTestCase
     {
         $name = 'John Doe';
         $email = 'john@example.com';
-        
+
         $this->validatorFactory
             ->shouldReceive('make')
             ->once()
@@ -53,28 +53,28 @@ class CreateUserServiceTest extends MockeryTestCase
                 ]
             )
             ->andReturn($this->validator);
-            
+
         $this->validator
             ->shouldReceive('fails')
             ->once()
             ->andReturn(false);
-        
+
         $savedUser = new User($name, $email, '1', 'test-uuid');
-        
+
         $this->userRepository
             ->shouldReceive('save')
             ->once()
             ->with(Mockery::type(User::class))
             ->andReturn($savedUser);
-            
+
         $this->eventPublisher
             ->shouldReceive('publishUserCreated')
             ->once()
-            ->with($savedUser->getUuid(), $savedUser->getName())
+            ->with($savedUser->getUuid(), $savedUser->getName(), $savedUser->getEmail())
             ->andReturn(null);
-        
+
         $result = $this->service->execute($name, $email);
-        
+
         $this->assertEquals($savedUser, $result);
     }
 
@@ -82,7 +82,7 @@ class CreateUserServiceTest extends MockeryTestCase
     {
         $name = 'Jo';
         $email = 'john@example.com';
-        
+
         $this->validatorFactory
             ->shouldReceive('make')
             ->once()
@@ -94,19 +94,19 @@ class CreateUserServiceTest extends MockeryTestCase
                 ]
             )
             ->andReturn($this->validator);
-            
+
         $this->validator
             ->shouldReceive('fails')
             ->once()
             ->andReturn(true);
-            
+
         $this->validator
             ->shouldReceive('errors')
             ->once()
             ->andReturn(Mockery::mock(['toArray' => ['name' => ['Name is too short']]]));
-        
+
         $this->expectException(InvalidArgumentException::class);
-        
+
         $this->service->execute($name, $email);
     }
 
@@ -114,7 +114,7 @@ class CreateUserServiceTest extends MockeryTestCase
     {
         $name = 'John Doe';
         $email = 'invalid-email';
-        
+
         $this->validatorFactory
             ->shouldReceive('make')
             ->once()
@@ -126,19 +126,19 @@ class CreateUserServiceTest extends MockeryTestCase
                 ]
             )
             ->andReturn($this->validator);
-            
+
         $this->validator
             ->shouldReceive('fails')
             ->once()
             ->andReturn(true);
-            
+
         $this->validator
             ->shouldReceive('errors')
             ->once()
             ->andReturn(Mockery::mock(['toArray' => ['email' => ['Invalid email format']]]));
-        
+
         $this->expectException(InvalidArgumentException::class);
-        
+
         $this->service->execute($name, $email);
     }
-} 
+}

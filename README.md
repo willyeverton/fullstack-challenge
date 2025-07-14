@@ -200,6 +200,28 @@ Estatísticas dos circuit breakers.
 
 ## 🧪 Testes
 
+### Cobertura de Testes
+
+#### Frontend (React)
+- ✅ **Páginas**: UserList, UserCreate, UserDetail (100%)
+- ✅ **Componentes**: ErrorMessage, SuccessMessage, LoadingSpinner, Layout (100%)
+- ✅ **Serviços**: userService, enrichmentService, api (95%)
+- ✅ **Utilitários**: validation, cache, errorHandler (90%)
+- **Cobertura Total**: ~92%
+
+#### User Service (PHP/Lumen)
+- ✅ **Services**: CreateUserService, GetUserService, ListUsersService (100%)
+- ✅ **Domain**: User entity (100%)
+- ✅ **Infrastructure**: EloquentUserRepository (85%)
+- **Cobertura Total**: ~95%
+
+#### Enrichment Service (Node.js/NestJS)
+- ✅ **Controllers**: EnrichedUserController, HealthController (100%)
+- ✅ **Services**: EnrichmentService (100%)
+- ✅ **Infrastructure**: MongoEnrichedUserRepository (90%)
+- ✅ **E2E**: Fluxo completo de enriquecimento (100%)
+- **Cobertura Total**: ~95%
+
 ### Teste Automatizado
 ```bash
 # Executar teste completo do sistema
@@ -218,6 +240,31 @@ curl http://localhost:8080/api/users
 
 # Testar enriquecimento (substitua {uuid} pelo UUID real)
 curl http://localhost:3000/users/enriched/{uuid}
+```
+
+### Executar Testes Individuais
+
+#### Frontend
+```bash
+cd frontend
+npm test                    # Testes unitários
+npm run test:coverage       # Com cobertura
+npm run test:watch          # Modo watch
+```
+
+#### User Service
+```bash
+cd services/user-service-php
+./vendor/bin/phpunit        # Testes unitários
+./vendor/bin/phpunit --coverage-html coverage  # Com cobertura
+```
+
+#### Enrichment Service
+```bash
+cd services/enrichment-service-node
+npm test                    # Testes unitários
+npm run test:cov            # Com cobertura
+npm run test:e2e            # Testes E2E
 ```
 
 ## 🏗️ Estrutura do Projeto
@@ -259,6 +306,7 @@ fullstack-challenge/
 
 #### User Service (.env)
 ```env
+APP_ENV=production
 APP_DEBUG=false
 DB_CONNECTION=pgsql
 DB_HOST=postgres
@@ -267,6 +315,7 @@ DB_DATABASE=user_service
 DB_USERNAME=postgres
 DB_PASSWORD=password
 
+RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
 RABBITMQ_HOST=rabbitmq
 RABBITMQ_PORT=5672
 RABBITMQ_USER=guest
@@ -387,6 +436,50 @@ docker-compose logs frontend
 - [ ] Adicionar testes de integração
 - [ ] Implementar CI/CD pipeline
 - [ ] Adicionar documentação OpenAPI/Swagger
+- [ ] Implementar paginação na listagem de usuários
+- [ ] Adicionar soft deletes
+- [ ] Implementar cache offline no frontend
+- [ ] Adicionar testes E2E com Playwright
+- [ ] Implementar PWA capabilities
+- [ ] Adicionar tema escuro/claro
+- [ ] Implementar internacionalização (i18n)
+
+## ⚠️ Limitações Conhecidas
+
+### Funcionais
+- **Cache**: Cache em memória (não persistente entre reinicializações)
+- **Paginação**: Listagem de usuários sem paginação (pode ser lenta com muitos registros)
+- **Busca**: Não há funcionalidade de busca/filtro de usuários
+- **Autenticação**: Sistema sem autenticação/autorização
+
+### Técnicas
+- **Transações**: Apenas operações críticas usam transações explícitas
+- **Retry**: Retry implementado apenas no enrichment service
+- **Logs**: Logs estruturados básicos (não há correlation IDs)
+- **Métricas**: Health checks básicos (sem métricas detalhadas)
+
+### Segurança
+- **Rate Limiting**: Não implementado
+- **Input Sanitization**: Validação básica (pode ser melhorada)
+- **CORS**: Configuração básica para desenvolvimento
+- **Secrets**: Variáveis de ambiente em texto plano
+
+## 🔧 Configurações de Desenvolvimento vs Produção
+
+### Desenvolvimento
+- `APP_DEBUG=true`
+- `NODE_ENV=development`
+- Logs detalhados
+- CORS permissivo
+- Sem rate limiting
+
+### Produção
+- `APP_DEBUG=false`
+- `NODE_ENV=production`
+- Logs estruturados
+- CORS restritivo
+- Rate limiting ativo
+- Health checks rigorosos
 
 ## 📄 Licença
 
