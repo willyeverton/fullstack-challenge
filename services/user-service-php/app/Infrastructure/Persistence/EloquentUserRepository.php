@@ -24,9 +24,9 @@ class EloquentUserRepository implements UserRepositoryInterface
         $model->save();
 
         return new User(
-            (string) $model->id,
             $model->name,
             $model->email,
+            (string) $model->id,
             $model->uuid
         );
         });
@@ -36,9 +36,9 @@ class EloquentUserRepository implements UserRepositoryInterface
     {
         return $this->model->all()->map(function ($model) {
             return new User(
-                (string) $model->id,
                 $model->name,
                 $model->email,
+                (string) $model->id,
                 $model->uuid
             );
         })->all();
@@ -53,9 +53,9 @@ class EloquentUserRepository implements UserRepositoryInterface
         }
 
         return new User(
-            (string) $model->id,
             $model->name,
             $model->email,
+            (string) $model->id,
             $model->uuid
         );
     }
