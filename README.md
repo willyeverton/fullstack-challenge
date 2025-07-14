@@ -89,6 +89,25 @@ sleep 180
 ./test-system.sh
 ```
 
+## ⚠️ Configuração de Variáveis de Ambiente
+
+Antes de subir os containers, copie o arquivo `.env.example` para `.env` na raiz do projeto:
+
+```bash
+cp .env.example .env
+```
+
+Edite o arquivo `.env` conforme necessário para ajustar as variáveis do seu ambiente (portas, credenciais, etc). Todas as variáveis usadas pelos serviços e pelo Docker Compose estão documentadas no `.env.example`.
+
+**Atenção:** Sempre que alterar o `.env`, reinicie os containers com:
+
+```bash
+docker-compose down
+docker-compose up -d --build
+```
+
+---
+
 ### URLs dos Serviços
 - **Frontend**: http://localhost:8000
 - **User Service API**: http://localhost:8080/api/users

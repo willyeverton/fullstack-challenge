@@ -4,6 +4,7 @@ vendor/
 .DS_Store
 .idea/
 .vscode/
+.cursorrules
 dist/
 coverage/
 # Docker artifacts

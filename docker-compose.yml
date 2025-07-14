@@ -9,18 +9,20 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     ports:
-      - "8000:80"
+      - "${FRONTEND_PORT:-8000}:80"
     depends_on:
       - user-service
       - enrichment-service
     networks:
       - app-network
     environment:
-      - VITE_API_BASE_URL=/api
-      - VITE_ENRICHMENT_API_URL=/enrichment
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+      - VITE_ENRICHMENT_API_URL=${VITE_ENRICHMENT_API_URL}
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    env_file:
+      - .env
 
   # User Service (PHP/Lumen)
   user-service:
@@ -30,17 +32,22 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     environment:
-      - APP_ENV=local
-      - APP_DEBUG=true
-      - DB_CONNECTION=pgsql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_DATABASE=user_service
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - APP_ENV=${APP_ENV}
+      - APP_DEBUG=${APP_DEBUG}
+      - DB_CONNECTION=${DB_CONNECTION}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_QUEUE=${RABBITMQ_QUEUE}
+      - RABBITMQ_DLX=${RABBITMQ_DLX}
+      - RABBITMQ_DLQ=${RABBITMQ_DLQ}
+      - RABBITMQ_RETRY_DELAY=${RABBITMQ_RETRY_DELAY}
+      - RABBITMQ_RETRY_ATTEMPTS=${RABBITMQ_RETRY_ATTEMPTS}
     ports:
-      - "8080:8000"
+      - "${USER_SERVICE_PORT:-8080}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,6 +63,8 @@ services:
       start_period: 40s
     volumes:
       - ./services/user-service-php:/var/www
+    env_file:
+      - .env
 
   # Enrichment Service (Node.js/NestJS)
   enrichment-service:
@@ -64,21 +73,18 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
-    volumes:
-      - ./services/enrichment-service-node:/app
-      - /app/node_modules
     environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - MONGODB_URI=mongodb://mongodb:27017/enrichment
-      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
-      - RABBITMQ_QUEUE=user.created
-      - RABBITMQ_DLX=user.created.dlx
-      - RABBITMQ_DLQ=user.created.dlq
-      - RABBITMQ_RETRY_DELAY=1000
-      - RABBITMQ_RETRY_ATTEMPTS=3
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+      - MONGODB_URI=${MONGODB_URI}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_QUEUE=${RABBITMQ_QUEUE}
+      - RABBITMQ_DLX=${RABBITMQ_DLX}
+      - RABBITMQ_DLQ=${RABBITMQ_DLQ}
+      - RABBITMQ_RETRY_DELAY=${RABBITMQ_RETRY_DELAY}
+      - RABBITMQ_RETRY_ATTEMPTS=${RABBITMQ_RETRY_ATTEMPTS}
     ports:
-      - "3000:3000"
+      - "${ENRICHMENT_SERVICE_PORT:-3000}:3000"
     depends_on:
       mongodb:
         condition: service_healthy
@@ -92,6 +98,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    env_file:
+      - .env
+    volumes:
+      - ./services/enrichment-service-node:/app
+      - /app/node_modules
 
   # PostgreSQL
   postgres:
