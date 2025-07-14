@@ -17,6 +17,7 @@ export class UserCreatedConsumer implements OnModuleInit, OnModuleDestroy {
     private readonly messageHandler: IMessageHandler,
     @Inject(INJECTION_TOKENS.SERVICES.ENRICHMENT)
     private readonly enrichmentService: IEnrichmentService,
+    @Inject(RetryService)
     private readonly retryService: RetryService
   ) { }
 

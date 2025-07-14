@@ -28,6 +28,5 @@ import { UserCreatedConsumer } from './infrastructure/messaging/rabbitmq/user-cr
     MessagingModule,
     PresentationModule,
   ],
-  providers: [UserCreatedConsumer],
 })
 export class AppModule { }
