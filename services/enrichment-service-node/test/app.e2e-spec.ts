@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
+import { EnrichedUserController } from '../src/presentation/controllers/enriched-user.controller';
 import { IEnrichedUserRepository } from '../src/domain/ports/enriched-user.repository.interface';
 import { INJECTION_TOKENS } from '../src/domain/constants/injection-tokens';
 import { EnrichedUser } from '../src/domain/entities/enriched-user.entity';
@@ -28,18 +28,23 @@ describe('EnrichedUserController (e2e)', () => {
     };
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(INJECTION_TOKENS.REPOSITORIES.ENRICHED_USER)
-      .useValue(mockRepository)
-      .compile();
+      controllers: [EnrichedUserController],
+      providers: [
+        {
+          provide: INJECTION_TOKENS.REPOSITORIES.ENRICHED_USER,
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
   });
 
   afterEach(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it('/users/enriched/:uuid (GET) - success', async () => {
@@ -72,4 +77,4 @@ describe('EnrichedUserController (e2e)', () => {
       error: 'Not Found',
     });
   });
-}); 
+});

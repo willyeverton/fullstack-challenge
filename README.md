@@ -200,6 +200,17 @@ Estatísticas dos circuit breakers.
 
 ## 🧪 Testes
 
+### Tipos de Teste
+
+#### 1. Testes Unitários
+Testam componentes isolados (funções, classes, métodos).
+
+#### 2. Testes de Integração
+Testam a comunicação entre serviços, bancos de dados e filas.
+
+#### 3. Testes End-to-End (E2E)
+Testam fluxos completos da aplicação.
+
 ### Cobertura de Testes
 
 #### Frontend (React)
@@ -222,6 +233,71 @@ Estatísticas dos circuit breakers.
 - ✅ **E2E**: Fluxo completo de enriquecimento (100%)
 - **Cobertura Total**: ~95%
 
+### Executar Todos os Testes
+
+#### Opção 1: Teste Completo do Sistema
+```bash
+# Executar teste automatizado do sistema
+./test-system.sh
+```
+
+#### Opção 2: Testes Individuais por Tipo
+
+##### Testes Unitários
+```bash
+# Frontend
+cd frontend
+npm test                    # Testes unitários
+npm run test:coverage       # Com cobertura
+npm run test:watch          # Modo watch
+
+# User Service
+cd services/user-service-php
+./vendor/bin/phpunit        # Testes unitários
+./vendor/bin/phpunit --coverage-html coverage  # Com cobertura
+
+# Enrichment Service
+cd services/enrichment-service-node
+npm test                    # Testes unitários
+npm run test:cov            # Com cobertura
+```
+
+##### Testes de Integração
+```bash
+# Executar testes de integração (requer ambiente Docker)
+cd tests/integration
+docker-compose -f docker-compose.test.yml up -d  # Subir ambiente de teste
+npm test                                          # Executar testes
+docker-compose -f docker-compose.test.yml down   # Limpar ambiente
+```
+
+##### Testes E2E
+```bash
+# Enrichment Service E2E
+cd services/enrichment-service-node
+npm run test:e2e            # Testes E2E
+```
+
+#### Opção 3: Pipeline de Testes (Recomendado)
+```bash
+# 1. Testes unitários
+cd frontend && npm test
+cd ../services/user-service-php && ./vendor/bin/phpunit
+cd ../enrichment-service-node && npm test
+
+# 2. Testes E2E
+cd ../enrichment-service-node && npm run test:e2e
+
+# 3. Testes de integração
+cd ../../tests/integration
+docker-compose -f docker-compose.test.yml up -d
+npm test
+docker-compose -f docker-compose.test.yml down
+
+# 4. Teste completo do sistema
+cd ../.. && ./test-system.sh
+```
+
 ### Teste Automatizado
 ```bash
 # Executar teste completo do sistema
@@ -240,31 +316,6 @@ curl http://localhost:8080/api/users
 
 # Testar enriquecimento (substitua {uuid} pelo UUID real)
 curl http://localhost:3000/users/enriched/{uuid}
-```
-
-### Executar Testes Individuais
-
-#### Frontend
-```bash
-cd frontend
-npm test                    # Testes unitários
-npm run test:coverage       # Com cobertura
-npm run test:watch          # Modo watch
-```
-
-#### User Service
-```bash
-cd services/user-service-php
-./vendor/bin/phpunit        # Testes unitários
-./vendor/bin/phpunit --coverage-html coverage  # Com cobertura
-```
-
-#### Enrichment Service
-```bash
-cd services/enrichment-service-node
-npm test                    # Testes unitários
-npm run test:cov            # Com cobertura
-npm run test:e2e            # Testes E2E
 ```
 
 ## 🏗️ Estrutura do Projeto

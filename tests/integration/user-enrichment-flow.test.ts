@@ -13,7 +13,7 @@ jest.setTimeout(30000);
 
 describe('User Enrichment Flow Integration Tests', () => {
   let mongoClient: MongoClient;
-  let connection: amqp.Connection;
+  let connection: any;
   let channel: amqp.Channel;
 
   // Conectar ao MongoDB e RabbitMQ antes dos testes
@@ -23,7 +23,7 @@ describe('User Enrichment Flow Integration Tests', () => {
     await mongoClient.connect();
 
     // Conectar ao RabbitMQ
-    connection = await amqp.connect(RABBITMQ_URI) as amqp.Connection;
+    connection = await amqp.connect(RABBITMQ_URI);
     channel = await connection.createChannel();
     await channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
   });
