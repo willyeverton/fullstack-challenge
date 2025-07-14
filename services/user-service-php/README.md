@@ -186,13 +186,13 @@ Health check do serviço.
 
 ```bash
 # Executar testes unitários
-./vendor/bin/phpunit
+composer test
 
 # Executar testes com cobertura
-./vendor/bin/phpunit --coverage-html coverage
+composer test --coverage-html coverage
 
 # Executar testes específicos
-./vendor/bin/phpunit --filter CreateUserServiceTest
+composer test --filter CreateUserServiceTest
 ```
 
 ## 🔍 Troubleshooting

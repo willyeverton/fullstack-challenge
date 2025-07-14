@@ -272,8 +272,8 @@ npm run test:watch          # Modo watch
 
 # User Service
 cd services/user-service-php
-./vendor/bin/phpunit        # Testes unitários
-./vendor/bin/phpunit --coverage-html coverage  # Com cobertura
+composer test        # Testes unitários
+composer test --coverage-html coverage  # Com cobertura
 
 # Enrichment Service
 cd services/enrichment-service-node
@@ -301,7 +301,7 @@ npm run test:e2e            # Testes E2E
 ```bash
 # 1. Testes unitários
 cd frontend && npm test
-cd ../services/user-service-php && ./vendor/bin/phpunit
+cd ../services/user-service-php && composer test
 cd ../enrichment-service-node && npm test
 
 # 2. Testes E2E
@@ -398,7 +398,7 @@ RABBITMQ_QUEUE=user.created
 NODE_ENV=production
 PORT=3000
 
-RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
 RABBITMQ_QUEUE=user.created
 RABBITMQ_DLX=user.created.dlx
 RABBITMQ_DLQ=user.created.dlq

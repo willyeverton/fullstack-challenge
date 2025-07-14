@@ -43,7 +43,7 @@ PORT=3000
 MONGODB_URI=mongodb://localhost:27017/enrichment
 
 # RabbitMQ
-RABBITMQ_URI=amqp://localhost:5672
+RABBITMQ_URL=amqp://localhost:5672
 RABBITMQ_QUEUE=user.created
 RABBITMQ_DLX=user.created.dlx
 RABBITMQ_DLQ=user.created.dlq

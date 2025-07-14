@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import enrichmentService from '../enrichmentService';
 
-// Mock do módulo axios
+// Variável global para acessar o mock
+let mockAxiosInstance: any;
+
 vi.mock('axios', () => {
   const mockAxiosInstance = {
     get: vi.fn(),
@@ -11,11 +13,11 @@ vi.mock('axios', () => {
       }
     }
   };
-
+  globalThis.mockAxiosInstance = mockAxiosInstance;
   return {
     default: {
       create: vi.fn(() => mockAxiosInstance),
-      isAxiosError: vi.fn()
+      isAxiosError: undefined // sobrescreveremos depois
     }
   };
 });
@@ -35,7 +37,7 @@ describe('enrichmentService', () => {
 
     // Configura o mock do isAxiosError
     const axios = require('axios');
-    axios.isAxiosError.mockImplementation((error: unknown) => {
+    axios.isAxiosError = vi.fn((error: unknown) => {
       return error && typeof error === 'object' && 'isAxiosError' in error;
     });
   });
@@ -48,11 +50,8 @@ describe('enrichmentService', () => {
         github: 'github.com/johndoe'
       };
 
-      const axios = require('axios');
-      const mockAxiosInstance = axios.create();
-
       // Mock da resposta da API
-      mockAxiosInstance.get.mockResolvedValue({ data: mockData });
+      globalThis.mockAxiosInstance.get.mockResolvedValue({ data: mockData });
 
       const result = await enrichmentService.getEnrichedUserData(uuid);
 
@@ -69,11 +68,8 @@ describe('enrichmentService', () => {
         }
       };
 
-      const axios = require('axios');
-      const mockAxiosInstance = axios.create();
-
       // Mock do erro 404
-      mockAxiosInstance.get.mockRejectedValue(mockError);
+      globalThis.mockAxiosInstance.get.mockRejectedValue(mockError);
 
       await expect(enrichmentService.getEnrichedUserData(uuid)).rejects.toThrow();
     });
@@ -87,11 +83,8 @@ describe('enrichmentService', () => {
         github: 'github.com/johndoe'
       };
 
-      const axios = require('axios');
-      const mockAxiosInstance = axios.create();
-
       // Mock da resposta da API
-      mockAxiosInstance.get.mockResolvedValue({ data: mockData });
+      globalThis.mockAxiosInstance.get.mockResolvedValue({ data: mockData });
 
       const result = await enrichmentService.refreshEnrichedUserData(uuid);
 

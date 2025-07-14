@@ -42,7 +42,7 @@ services:
       - NODE_ENV=test
       - PORT=3001
       - MONGODB_URI=mongodb://mongodb-test:27017/enrichment_test
-      - RABBITMQ_URI=amqp://guest:guest@rabbitmq-test:5672
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-test:5672
       - RABBITMQ_QUEUE=user.created.test
       - RABBITMQ_DLX=user.created.dlx.test
       - RABBITMQ_DLQ=user.created.dlq.test
@@ -102,7 +102,7 @@ services:
     environment:
       - USER_SERVICE_URL=http://nginx-user-test:80/api
       - ENRICHMENT_SERVICE_URL=http://enrichment-service-test:3001
-      - RABBITMQ_URI=amqp://guest:guest@rabbitmq-test:5672
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq-test:5672
       - RABBITMQ_QUEUE=user.created.test
     volumes:
       - ./results:/app/results

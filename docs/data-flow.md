@@ -266,7 +266,7 @@ DB_DATABASE=user_service
 
 #### Enrichment Service
 ```env
-RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
 MONGODB_URI=mongodb://mongodb:27017/enrichment
 RABBITMQ_RETRY_ATTEMPTS=3
 ```

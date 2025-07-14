@@ -5,7 +5,7 @@ import * as amqp from 'amqplib';
 // Configuração dos serviços
 const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://nginx-user-test:80/api';
 const ENRICHMENT_SERVICE_URL = process.env.ENRICHMENT_SERVICE_URL || 'http://enrichment-service-test:3001';
-const RABBITMQ_URI = process.env.RABBITMQ_URI || 'amqp://guest:guest@rabbitmq-test:5672';
+const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq-test:5672';
 const RABBITMQ_QUEUE = process.env.RABBITMQ_QUEUE || 'user.created.test';
 
 // Timeout mais longo para os testes de integração
@@ -23,7 +23,7 @@ describe('User Enrichment Flow Integration Tests', () => {
     await mongoClient.connect();
 
     // Conectar ao RabbitMQ
-    connection = await amqp.connect(RABBITMQ_URI);
+    connection = await amqp.connect(RABBITMQ_URL);
     channel = await connection.createChannel();
     await channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
   });
@@ -37,9 +37,10 @@ describe('User Enrichment Flow Integration Tests', () => {
 
   it('should create a user and verify enrichment data', async () => {
     // 1. Criar um novo usuário via User Service
+    const uniqueEmail = `test+${Date.now()}@example.com`;
     const userData = {
       name: 'Test User',
-      email: 'test@example.com'
+      email: uniqueEmail
     };
 
     const createResponse = await axios.post(`${USER_SERVICE_URL}/users`, userData);

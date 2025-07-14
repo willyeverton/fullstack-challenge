@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import userService from '../userService';
+import api from '../api';
 
 // Mock do módulo api
 vi.mock('../api', () => {
@@ -15,7 +16,14 @@ vi.mock('../api', () => {
 
 describe('userService', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.resetAllMocks();
+    (api as any).get.mockReset && (api as any).get.mockReset();
+    (api as any).post.mockReset && (api as any).post.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('getUsers', () => {
@@ -25,8 +33,7 @@ describe('userService', () => {
         { id: 2, uuid: 'uuid2', name: 'User 2', email: 'user2@example.com' },
       ];
 
-      const api = require('../api').default;
-      api.get.mockResolvedValue({ data: mockUsers });
+      (api as any).get.mockResolvedValue({ data: mockUsers });
 
       const result = await userService.getUsers();
 
@@ -35,9 +42,11 @@ describe('userService', () => {
     });
 
     it('deve propagar o erro quando a API falha', async () => {
-      const mockError = new Error('API Error');
-      const api = require('../api').default;
-      api.get.mockRejectedValue(mockError);
+      vi.resetModules();
+      vi.clearAllMocks();
+      const api = (await import('../api')).default;
+      const userService = (await import('../userService')).default;
+      vi.spyOn(api, 'get').mockRejectedValue(new Error('API Error'));
 
       await expect(userService.getUsers()).rejects.toThrow('API Error');
       expect(api.get).toHaveBeenCalledWith('/users');
@@ -47,8 +56,7 @@ describe('userService', () => {
   describe('getUserByUuid', () => {
     it('deve buscar um usuário pelo UUID', async () => {
       const mockUser = { id: 1, uuid: 'uuid1', name: 'User 1', email: 'user1@example.com' };
-      const api = require('../api').default;
-      api.get.mockResolvedValue({ data: mockUser });
+      (api as any).get.mockResolvedValue({ data: mockUser });
 
       const result = await userService.getUserByUuid('uuid1');
 
@@ -68,8 +76,7 @@ describe('userService', () => {
         created_at: '2023-01-01T00:00:00.000Z',
       };
 
-      const api = require('../api').default;
-      api.post.mockResolvedValue({ data: mockResponse });
+      (api as any).post.mockResolvedValue({ data: mockResponse });
 
       const result = await userService.createUser(userData);
 
