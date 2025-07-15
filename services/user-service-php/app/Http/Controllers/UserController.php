@@ -36,7 +36,24 @@ class UserController extends BaseController
 
             return new JsonResponse($user, 201);
         } catch (InvalidArgumentException $e) {
+            $errorData = json_decode($e->getMessage(), true);
+
+            // Se a mensagem contém erros de validação estruturados
+            if (is_array($errorData) && isset($errorData['errors'])) {
+                // Verificar se é erro de e-mail duplicado
+                if (isset($errorData['errors']['email']) &&
+                    in_array('The email has already been taken.', $errorData['errors']['email'])) {
+                    return new JsonResponse($errorData, 422);
+                }
+                return new JsonResponse($errorData, 400);
+            }
+
+            // Fallback para mensagens simples
             return new JsonResponse(['error' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            // Log do erro para debugging
+            error_log("Unexpected error in UserController::store: " . $e->getMessage());
+            return new JsonResponse(['error' => 'Internal server error'], 500);
         }
     }
 
@@ -56,4 +73,4 @@ class UserController extends BaseController
 
         return new JsonResponse($user);
     }
-} 
+}

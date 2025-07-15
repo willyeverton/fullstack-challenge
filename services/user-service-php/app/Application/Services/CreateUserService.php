@@ -40,6 +40,14 @@ class CreateUserService
             );
         }
 
+        // Verificar se o e-mail já existe
+        $existingUser = $this->userRepository->findByEmail($email);
+        if ($existingUser) {
+            throw new InvalidArgumentException(
+                json_encode(['errors' => ['email' => ['The email has already been taken.']]])
+            );
+        }
+
         $user = new User($name, $email);
         $createdUser = $this->userRepository->save($user);
 

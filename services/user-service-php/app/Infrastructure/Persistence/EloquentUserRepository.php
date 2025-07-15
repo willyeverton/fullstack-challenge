@@ -60,6 +60,22 @@ class EloquentUserRepository implements UserRepositoryInterface
         );
     }
 
+    public function findByEmail(string $email): ?User
+    {
+        $model = $this->model->where('email', $email)->first();
+
+        if (!$model) {
+            return null;
+        }
+
+        return new User(
+            $model->name,
+            $model->email,
+            (string) $model->id,
+            $model->uuid
+        );
+    }
+
     private function toEntity(EloquentUser $model): User
     {
         return new User(
